@@ -2,6 +2,8 @@ import streamlit as st
 import pandas as pd
 import sys
 import time
+import os
+import json
 from datetime import datetime, timedelta
 from messages_config import get_drip_message, get_drip_message_perfil, get_next_business_day, DRIP_DAYS_REGISTRO, DRIP_DAYS_PERFIL
 from tenacity import retry, wait_fixed, stop_after_attempt, retry_if_exception_type
@@ -84,7 +86,11 @@ SHEET_ASESORES = '17pal_t6fT3cXZ7yKu4K0bcuBhaCr1Ww8SlMcG1CnNQI'
 
 @st.cache_resource
 def get_services():
-    if "gcp_service_account" in st.secrets:
+    if "GCP_SERVICE_ACCOUNT" in os.environ:
+        # Estamos en Render u otro servidor que pase variables de entorno
+        creds_dict = json.loads(os.environ["GCP_SERVICE_ACCOUNT"])
+        creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
+    elif "gcp_service_account" in st.secrets:
         # Estamos en la nube de Streamlit
         creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=SCOPES)
     else:
