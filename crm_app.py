@@ -84,7 +84,13 @@ SHEET_ASESORES = '17pal_t6fT3cXZ7yKu4K0bcuBhaCr1Ww8SlMcG1CnNQI'
 
 @st.cache_resource
 def get_services():
-    creds = Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE, scopes=SCOPES)
+    if "gcp_service_account" in st.secrets:
+        # Estamos en la nube de Streamlit
+        creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=SCOPES)
+    else:
+        # Estamos corriendo localmente en Windows
+        creds = Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE, scopes=SCOPES)
+        
     sheets_service = build('sheets', 'v4', credentials=creds)
     return sheets_service
 
@@ -299,11 +305,11 @@ def show_lead_card(idx, lead, tab_name, sheet_id, col_contactado, sheets_service
 
 # Main App
 def main():
-    # El logo proveído se encuentra localmente, usaremos la ruta local absoluta (la subida del usuario)
+    # El logo proveído asume estar en la misma ruta que el script (GitHub repo o local)
     try:
-        st.sidebar.image("C:\\Users\\paato\\.gemini\\antigravity\\logo_tvm.png", width=180) 
+        st.sidebar.image("logo_tvm.png", width=180) 
     except Exception as e:
-        st.sidebar.warning("Por favor, guarda la imagen como 'logo_tvm.png' en C:\\Users\\paato\\.gemini\\antigravity\\")
+        pass
 
     st.sidebar.title("Menú Asesores")
     asesor = st.sidebar.radio("Selecciona Asesor:", ["Diana", "Augusto"])
