@@ -114,12 +114,8 @@ def fetch_data(sheets_service, spreadsheet_id, range_name):
     # Pad rows that are shorter than the header length
     padded_data = []
     for row in data:
-        row_length = len(row)
-        header_length = len(headers)
-        if row_length < header_length:
-            row.extend([''] * (header_length - row_length))
-        elif row_length > header_length:
-            row = row[:header_length]
+        # No truncamos más los datos, para evitar perder columnas si hay un desajuste temporal.
+        # padded_data.append(row[:header_length]) 
         padded_data.append(row)
     
     df = pd.DataFrame(padded_data, columns=headers)
@@ -214,19 +210,24 @@ def assign_leads(df, diana_phones):
     df_augusto = df[~mask_diana].copy()
     return df_diana, df_augusto
 
-def show_lead_card(idx, lead, tab_name, sheet_id, sheets_service, is_historial=False, mode="normal", drip_step=0, asesor_name="Augusto"):
+def show_lead_card(idx, lead, tab_name, sheet_id, sheets_service, source_df=None, is_historial=False, mode="normal", drip_step=0, asesor_name="Augusto"):
     st.markdown(f'<div class="lead-card">', unsafe_allow_html=True)
     cols = st.columns([3, 1])
     
     # Detectar la columna de CONTACTADO dinámicamente desde el índice del DataFrame
-    lead_cols = list(lead.index)
-    if 'CONTACTADO' in lead_cols:
-        contactado_col_idx = lead_cols.index('CONTACTADO')
+    # MAPEO ROBUSTO DE COLUMNA: 
+    # Usamos el DataFrame original de la pestaña (sin concatenar) para saber el índice real en la hoja.
+    if source_df is not None and 'CONTACTADO' in source_df.columns:
+        actual_sheet_idx = list(source_df.columns).index('CONTACTADO')
     else:
-        contactado_col_idx = len(lead_cols)  # fallback: al final
-    # Restar columnas internas que NO están en el Sheet
-    internal_cols = {'WHATSAPP_CLEAN', 'ROW_INDEX', 'TAB_ORIGINAL', 'Destino', 'Perfil'}
-    actual_sheet_idx = sum(1 for c in lead_cols[:contactado_col_idx] if c not in internal_cols)
+        # Fallback si no tenemos el DF original
+        lead_cols = list(lead.index)
+        if 'CONTACTADO' in lead_cols:
+            contactado_col_idx = lead_cols.index('CONTACTADO')
+        else:
+            contactado_col_idx = len(lead_cols)
+        internal_cols = {'WHATSAPP_CLEAN', 'ROW_INDEX', 'TAB_ORIGINAL', 'Destino', 'Perfil', 'FECHA_DT'}
+        actual_sheet_idx = sum(1 for c in lead_cols[:contactado_col_idx] if c not in internal_cols)
     
     with cols[0]:
         nombre = f"{lead.get('NOMBRE', '')} {lead.get('APELLIDO', '')}"
@@ -450,7 +451,8 @@ def main():
                 for idx, lead in df_mostrar.iterrows():
                     # Usamos lead['TAB_ORIGINAL'] para que cuando escriba sepa la hoja verdadera que le corresponde
                     tab_to_update = lead.get('TAB_ORIGINAL', selected_pais) 
-                    show_lead_card(idx, lead, tab_to_update, SHEET_REGISTRO, sheets_service, is_historial=is_hist)
+                    original_df = registros.get(tab_to_update)
+                    show_lead_card(idx, lead, tab_to_update, SHEET_REGISTRO, sheets_service, source_df=original_df, is_historial=is_hist)
             else:
                 st.info("No hay leads en esta sección.")
         else:
@@ -513,7 +515,8 @@ def main():
                 is_hist = (vista_tipo == "Historial (Contactados)")
                 for idx, lead in df_mostrar.iterrows():
                     tab_to_update = lead.get('TAB_ORIGINAL', selected_perfil)
-                    show_lead_card(idx, lead, tab_to_update, SHEET_ESTUDIO, sheets_service, is_historial=is_hist)
+                    original_df = estudios.get(tab_to_update)
+                    show_lead_card(idx, lead, tab_to_update, SHEET_ESTUDIO, sheets_service, source_df=original_df, is_historial=is_hist)
             else:
                 st.info("No hay leads en esta sección.")
         else:
@@ -598,7 +601,8 @@ def main():
                 if leads_due:
                     for (idx, lead, next_step) in leads_due:
                         tab_to_update = lead.get('TAB_ORIGINAL', 'Desconocido')
-                        show_lead_card(idx, lead, tab_to_update, target_sheet_id, sheets_service, mode=mode_card, drip_step=next_step, asesor_name=asesor)
+                        original_df = source_dict.get(tab_to_update)
+                        show_lead_card(idx, lead, tab_to_update, target_sheet_id, sheets_service, source_df=original_df, mode=mode_card, drip_step=next_step, asesor_name=asesor)
                 else:
                     st.success("¡Al día! No hay mensajes pendientes programados para esta fecha.")
             else:
