@@ -111,11 +111,14 @@ def fetch_data(sheets_service, spreadsheet_id, range_name):
     headers = values[0]
     data = values[1:]
     
-    # Pad rows that are shorter than the header length
+    header_length = len(headers)
     padded_data = []
     for row in data:
-        # No truncamos más los datos, para evitar perder columnas si hay un desajuste temporal.
-        # padded_data.append(row[:header_length]) 
+        row_length = len(row)
+        if row_length < header_length:
+            row.extend([''] * (header_length - row_length))
+        elif row_length > header_length:
+            row = row[:header_length]
         padded_data.append(row)
     
     df = pd.DataFrame(padded_data, columns=headers)
