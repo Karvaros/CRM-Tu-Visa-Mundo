@@ -42,9 +42,9 @@ def get_drip_message(destino, step, asesor_name="Augusto"):
     # 1: Recordatorio (Día 1)
     elif step == 1:
         if is_eeuu:
-            return f"Quería asegurarme de que no te pierdas la oportunidad de realizar tu Estudio de Perfil sin costo. Mucha gente está empezando a planificar sus viajes de fin de año/invierno a {destino_name}, y es un momento ideal para adelantar el trámite sin apuros.\n\nSolo te tomará un minuto. Ingresa al siguiente link y responda algunas preguntas. En breve recibirás en tu correo la respuesta a tu Estudio de Perfil: https://www.tuvisamundo.com/estudio-de-perfil-en-linea/"
+            return f"¡Hola 👋🏼! Espero que estés bien.\n\n¿Sabías que puedes realizar tu Estudio de Perfil en linea sin costo?. Así sabrás de primera mano si tu perfil es o no aplicable para la visa de turismo.\nSolo te tomará un minuto. Ingresa al siguiente link y responda algunas preguntas. En breve recibirás en tu correo la respuesta a tu Estudio de Perfil: https://www.tuvisamundo.com/estudio-de-perfil-en-linea/"
         else:
-            return f"¡Hola 👋🏼! ¿Cómo estás? Te escribo de *Tu Visa Mundo*.\n\nQuería asegurarme de que no te pierdas la oportunidad de realizar tu Estudio de Perfil sin costo. Mucha gente está empezando a planificar sus viajes de fin de año/invierno a Canadá, y es un momento ideal para adelantar el trámite sin apuros.\n\nSolo te tomará un minuto. Ingresa al siguiente link y responda algunas preguntas. En breve recibirás en tu correo la respuesta a tu Estudio de Perfil: https://www.tuvisamundo.com/estudio-de-perfil-en-linea/"
+            return f"¡Hola 👋🏼! Espero que estés bien.\n\n¿Sabías que puedes realizar tu Estudio de Perfil en linea sin costo?. Así sabrás de primera mano si tu perfil es o no aplicable para la visa de turismo.\nSolo te tomará un minuto. Ingresa al siguiente link y responda algunas preguntas. En breve recibirás en tu correo la respuesta a tu Estudio de Perfil: https://www.tuvisamundo.com/estudio-de-perfil-en-linea/"
             
     # 2: Video (Día 4)
     elif step == 2:
