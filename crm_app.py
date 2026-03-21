@@ -217,20 +217,21 @@ def show_lead_card(idx, lead, tab_name, sheet_id, sheets_service, source_df=None
     st.markdown(f'<div class="lead-card">', unsafe_allow_html=True)
     cols = st.columns([3, 1])
     
-    # Detectar la columna de CONTACTADO dinámicamente desde el índice del DataFrame
-    # MAPEO ROBUSTO DE COLUMNA: 
-    # Usamos el DataFrame original de la pestaña (sin concatenar) para saber el índice real en la hoja.
-    if source_df is not None and 'CONTACTADO' in source_df.columns:
-        actual_sheet_idx = list(source_df.columns).index('CONTACTADO')
+    # Fix: Deterministic column lookup based on the known structure of the Google Sheets
+    if sheet_id == SHEET_REGISTRO:
+        actual_sheet_idx = 4  # Columna E 'CONTACTADO' is at index 4 in Solo Registro
+    elif sheet_id == SHEET_ESTUDIO:
+        actual_sheet_idx = 10 # Columna K 'CONTACTADO' is at index 10 in Estudios de Perfil
     else:
-        # Fallback si no tenemos el DF original
-        lead_cols = list(lead.index)
-        if 'CONTACTADO' in lead_cols:
-            contactado_col_idx = lead_cols.index('CONTACTADO')
+        # Safe fallback logic if sheet is unknown
+        if source_df is not None and 'CONTACTADO' in source_df.columns:
+            external_cols = [c for c in source_df.columns if c not in {'ROW_INDEX', 'WHATSAPP_CLEAN', 'Destino', 'Perfil', 'TAB_ORIGINAL', 'FECHA_DT'}]
+            try:
+                actual_sheet_idx = external_cols.index('CONTACTADO')
+            except ValueError:
+                actual_sheet_idx = 4
         else:
-            contactado_col_idx = len(lead_cols)
-        internal_cols = {'WHATSAPP_CLEAN', 'ROW_INDEX', 'TAB_ORIGINAL', 'Destino', 'Perfil', 'FECHA_DT'}
-        actual_sheet_idx = sum(1 for c in lead_cols[:contactado_col_idx] if c not in internal_cols)
+            actual_sheet_idx = 4
     
     with cols[0]:
         nombre = f"{lead.get('NOMBRE', '')} {lead.get('APELLIDO', '')}"
@@ -542,13 +543,13 @@ def main():
         if origen_seguimiento == "Solo Registro":
             source_dict = registros
             target_sheet_id = SHEET_REGISTRO
-            target_col_contactado = 'F'
+            target_col_contactado = 'E' # Indice 4 (CONTACTADO en Solo Registro)
             drip_days_ref = DRIP_DAYS_REGISTRO
             mode_card = "seguimiento"
         else: # Estudios de Perfil
             source_dict = estudios
             target_sheet_id = SHEET_ESTUDIO
-            target_col_contactado = 'K'
+            target_col_contactado = 'K' # Indice 10 (CONTACTADO en Estudios)
             drip_days_ref = DRIP_DAYS_PERFIL
             mode_card = "seguimiento_perfil"
         
