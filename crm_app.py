@@ -127,6 +127,8 @@ def fetch_data(sheets_service, spreadsheet_id, range_name):
         df['CONTACTADO'] = ""
     else:
         df['CONTACTADO'] = df['CONTACTADO'].fillna("").astype(str).str.strip().str.upper()
+        # Clean 'SI' to 'SÍ' to normalize across the app
+        df['CONTACTADO'] = df['CONTACTADO'].replace({'SI': 'SÍ'})
         
     if 'ULTIMO_MENSAJE' not in df.columns:
         df['ULTIMO_MENSAJE'] = -1
