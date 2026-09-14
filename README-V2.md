@@ -40,11 +40,21 @@ Para Baserow, sustituir la creación del repositorio en el proveedor por un adap
 
 | Tabla | Campos previstos |
 | --- | --- |
-| LEADS | ID, VERSION, NOMBRE, APELLIDO, WHATSAPP, EMAIL, DESTINO, TIPO_VISA, ORIGEN, SEGMENTO, TIPO_ESTUDIO, PERFIL_ESTUDIO, SECUENCIA_ID, FECHA_INGRESO, ESTADO, ULTIMO_CONTACTO, ULTIMO_MENSAJE (relación), PROXIMO_CONTACTO, PROXIMA_ACCION, PROXIMO_MENSAJE (relación), SEGUIMIENTO_MANUAL, SECUENCIA_PAUSADA, ASESOR, NOTAS |
-| INTERACCIONES | ID, LEAD (relación), TIPO, FECHA (UTC), DETALLE, MENSAJE (relación), MENSAJE_TEXTO (copia histórica), ASESOR |
-| MENSAJES | ID, SECUENCIA_ID, SEGMENTOS, DESTINO, ORDEN, DIA_SECUENCIA, TITULO, TEXTO, RECURSO_TIPO, RECURSO_URL, SOLO_DIAS_HABILES, BORRADOR, REQUIERE_REVISION, OBSERVACIONES |
+| LEADS | ID, VERSION, NOMBRE, APELLIDO, WHATSAPP, EMAIL, DESTINO, TIPO_VISA, ORIGEN, SEGMENTO, TIPO_ESTUDIO, PERFIL_ESTUDIO, SECUENCIA_ID, ULTIMO_HITO_WHATSAPP, FECHA_INGRESO, ESTADO, ULTIMO_CONTACTO, ULTIMO_MENSAJE (relación), PROXIMO_CONTACTO, PROXIMA_ACCION, PROXIMO_MENSAJE (relación), SEGUIMIENTO_MANUAL, SECUENCIA_PAUSADA, ASESOR, NOTAS |
+| INTERACCIONES | ID, ID_EVENTO_EXTERNO, LEAD (relación), TIPO, FECHA (UTC), DETALLE, MENSAJE (relación), MENSAJE_TEXTO (copia histórica), ASESOR, ORIGEN_SISTEMA |
+| MENSAJES | ID, SECUENCIA_ID, SEGMENTOS, DESTINO, ORDEN, DIA_SECUENCIA, HITO_WHATSAPP, TITULO, TEXTO, RECURSO_TIPO, RECURSO_URL, SOLO_DIAS_HABILES, BORRADOR, REQUIERE_REVISION, OBSERVACIONES |
 
 Antes de habilitar datos reales: definir permisos/autenticación, paginación, validación de respuestas y estrategia de concurrencia/idempotencia para la escritura coordinada de lead + interacción. El adaptador Baserow no está implementado; no se asume atomicidad entre tablas. ASESOR es opcional y no depende de Augusto/Diana.
+
+## Transición futura de SIN ESTUDIO a ESTUDIO A/B/C
+
+Esta transición se implementará cuando existan el estudio en línea, Baserow y la integración con ActiveCampaign. ActiveCampaign deberá informar que la respuesta del estudio fue enviada e incluir una referencia inequívoca al lead y su clasificación A, B o C. Baserow será la fuente de verdad del estado operativo del CRM.
+
+El cambio de segmento no debe reiniciar la comunicación. El CRM conservará el último mensaje de WhatsApp realmente confirmado como enviado y su `HITO_WHATSAPP`. Al recibir el evento del estudio, pausará SIN ESTUDIO, registrará una interacción `RESPUESTA_ESTUDIO_ENVIADA`, asignará ESTUDIO A/B/C y elegirá el primer mensaje del nuevo segmento cuyo hito todavía no haya recorrido el lead. La próxima fecha se calculará desde el último envío real, de acuerdo con el intervalo del mensaje seleccionado.
+
+No se debe inferir el avance solo por días desde el registro, por mensajes abiertos en WhatsApp ni por mensajes copiados. Solamente cuentan las confirmaciones de envío almacenadas en INTERACCIONES. El evento externo debe usar `ID_EVENTO_EXTERNO` para que un reintento de ActiveCampaign no cambie dos veces el segmento ni cree interacciones duplicadas.
+
+Antes de implementar esta regla falta definir la correspondencia exacta entre los hitos de SIN ESTUDIO y ESTUDIO A/B/C, el identificador compartido entre ActiveCampaign y Baserow, y qué ocurre si el evento llega mientras existe una respuesta o seguimiento manual pendiente.
 
 ## Vercel
 
@@ -57,4 +67,5 @@ Crear un proyecto de Vercel independiente para la V2, framework Next.js, raíz d
 - Faltan el enlace web de testimonios, el Reel de tres errores, el video de Ana y su hija, la imagen/fecha de la oferta y el video de beneficios del Plan Basic en la secuencia ESTUDIO.
 - Australia contiene enlaces de Canadá en los mensajes 3 y 5. Estados Unidos menciona Canadá en el mensaje 2 y enlaza la página de Canadá en el mensaje 3. La URL de Perfil de Reino Unido difiere de la utilizada en las demás secuencias y debe confirmarse.
 
-Pendiente: conectar Baserow y autenticación, completar los recursos anteriores, construir la secuencia del estudio pago y ampliar pantallas secundarias. Hotmart, ManyChat y ActiveCampaign quedan fuera de esta etapa.
+Pendiente: conectar Baserow y autenticación, completar los recursos anteriores, construir la secuencia del estudio pago, implementar la transición por hitos con ActiveCampaign y ampliar pantallas secundarias. Hotmart, ManyChat y ActiveCampaign quedan sin conexión durante esta etapa.
+
