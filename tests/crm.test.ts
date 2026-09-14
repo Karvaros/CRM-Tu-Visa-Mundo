@@ -39,11 +39,6 @@ test("agenda clasifica los cuatro grupos y excluye fechas futuras, pausados y ce
 });
 test("envío atrasado calcula desde hoy, guarda texto real y no muta entrada", () => {
   const data = seed();
-  data.mensajes = data.mensajes.map((message) =>
-    message.id === "sin-estudio-eeuu-2"
-      ? { ...message, requiereRevision: false }
-      : message,
-  );
   const result = applyCommand(data, sent(data, 1), now, "event-1");
   assert.equal(result.leads[1].proximoContacto, "2026-09-17");
   assert.equal(result.leads[1].ultimoContacto, now.toISOString());
@@ -184,7 +179,7 @@ test("mensajes de difusión no incluyen variables de nombre y mantienen segmento
   assert.deepEqual(medio.segmento, ["ESTUDIO_C"]);
   assert.equal(
     data.mensajes.filter((message) => message.requiereRevision).length,
-    11,
+    6,
   );
 });
 test("la secuencia A/B y la C convergen después del mensaje de resultado", () => {
@@ -204,6 +199,12 @@ test("la secuencia A/B y la C convergen después del mensaje de resultado", () =
 });
 test("mensajes pendientes o personalizados no pueden aprobarse ni enviarse", async () => {
   const data = seed();
+  data.leads[1] = {
+    ...data.leads[1],
+    segmento: "ESTUDIO_A",
+    secuenciaId: "estudio-canada",
+    proximoMensajeId: "estudio-canada-4",
+  };
   assert.throws(
     () => applyCommand(data, sent(data, 1), now, "event-1"),
     /revisión/,
@@ -224,7 +225,7 @@ test("mensajes pendientes o personalizados no pueden aprobarse ni enviarse", asy
     /nombre/,
   );
   const placeholder = stored.mensajes.find(
-    (message) => message.id === "estudio-canada-3",
+    (message) => message.id === "estudio-canada-4",
   )!;
   await assert.rejects(
     () => repo.saveMessage({ ...placeholder, requiereRevision: false }),

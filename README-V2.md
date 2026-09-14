@@ -40,7 +40,7 @@ Para Baserow, sustituir la creación del repositorio en el proveedor por un adap
 
 | Tabla | Campos previstos |
 | --- | --- |
-| LEADS | ID, VERSION, NOMBRE, APELLIDO, WHATSAPP, EMAIL, DESTINO, TIPO_VISA, ORIGEN, SEGMENTO, TIPO_ESTUDIO, PERFIL_ESTUDIO, SECUENCIA_ID, ULTIMO_HITO_WHATSAPP, FECHA_INGRESO, ESTADO, ULTIMO_CONTACTO, ULTIMO_MENSAJE (relación), PROXIMO_CONTACTO, PROXIMA_ACCION, PROXIMO_MENSAJE (relación), SEGUIMIENTO_MANUAL, SECUENCIA_PAUSADA, ASESOR, NOTAS |
+| LEADS | ID, VERSION, NOMBRE, APELLIDO, WHATSAPP, EMAIL, DESTINO, TIPO_VISA, ORIGEN, SEGMENTO, TIPO_ESTUDIO, PERFIL_ESTUDIO, PRIMER_ESTUDIO_ID, FECHA_PRIMER_ESTUDIO, SECUENCIA_ID, ULTIMO_HITO_WHATSAPP, FECHA_INGRESO, ESTADO, ULTIMO_CONTACTO, ULTIMO_MENSAJE (relación), PROXIMO_CONTACTO, PROXIMA_ACCION, PROXIMO_MENSAJE (relación), SEGUIMIENTO_MANUAL, SECUENCIA_PAUSADA, ASESOR, NOTAS |
 | INTERACCIONES | ID, ID_EVENTO_EXTERNO, LEAD (relación), TIPO, FECHA (UTC), DETALLE, MENSAJE (relación), MENSAJE_TEXTO (copia histórica), ASESOR, ORIGEN_SISTEMA |
 | MENSAJES | ID, SECUENCIA_ID, SEGMENTOS, DESTINO, ORDEN, DIA_SECUENCIA, HITO_WHATSAPP, TITULO, TEXTO, RECURSO_TIPO, RECURSO_URL, SOLO_DIAS_HABILES, BORRADOR, REQUIERE_REVISION, OBSERVACIONES |
 
@@ -50,11 +50,13 @@ Antes de habilitar datos reales: definir permisos/autenticación, paginación, v
 
 Esta transición se implementará cuando existan el estudio en línea, Baserow y la integración con ActiveCampaign. ActiveCampaign deberá informar que la respuesta del estudio fue enviada e incluir una referencia inequívoca al lead y su clasificación A, B o C. Baserow será la fuente de verdad del estado operativo del CRM.
 
-El cambio de segmento no debe reiniciar la comunicación. El CRM conservará el último mensaje de WhatsApp realmente confirmado como enviado y su `HITO_WHATSAPP`. Al recibir el evento del estudio, pausará SIN ESTUDIO, registrará una interacción `RESPUESTA_ESTUDIO_ENVIADA`, asignará ESTUDIO A/B/C y elegirá el primer mensaje del nuevo segmento cuyo hito todavía no haya recorrido el lead. La próxima fecha se calculará desde el último envío real, de acuerdo con el intervalo del mensaje seleccionado.
+El cambio de segmento no debe reiniciar la comunicación. El CRM conservará el último mensaje de WhatsApp realmente confirmado como enviado y su `HITO_WHATSAPP`. Al recibir el evento del estudio, pausará SIN ESTUDIO, registrará una interacción `RESPUESTA_ESTUDIO_ENVIADA`, asignará ESTUDIO A/B/C y omitirá la bienvenida de ESTUDIO. Si ActiveCampaign todavía no envió el resultado específico por WhatsApp, el CRM comenzará en el mensaje 2, que informa si el perfil es Alto/Medio-Alto o Medio. Si ese resultado ya fue enviado, comenzará en el mensaje 3. Desde allí elegirá el primer hito que el lead todavía no haya recorrido y calculará la próxima fecha desde el último envío real.
 
 No se debe inferir el avance solo por días desde el registro, por mensajes abiertos en WhatsApp ni por mensajes copiados. Solamente cuentan las confirmaciones de envío almacenadas en INTERACCIONES. El evento externo debe usar `ID_EVENTO_EXTERNO` para que un reintento de ActiveCampaign no cambie dos veces el segmento ni cree interacciones duplicadas.
 
-Antes de implementar esta regla falta definir la correspondencia exacta entre los hitos de SIN ESTUDIO y ESTUDIO A/B/C, el identificador compartido entre ActiveCampaign y Baserow, y qué ocurre si el evento llega mientras existe una respuesta o seguimiento manual pendiente.
+La primera respuesta válida del estudio fija de manera permanente la clasificación A/B/C mediante `PRIMER_ESTUDIO_ID` y `FECHA_PRIMER_ESTUDIO`. Si el contacto completa el estudio nuevamente, el evento se registra para auditoría como repetido, pero no cambia `PERFIL_ESTUDIO`, no reinicia la secuencia y no vuelve a enviar el mensaje de resultado.
+
+Antes de implementar esta regla falta definir la correspondencia exacta de los hitos posteriores al mensaje de perfil, el identificador compartido entre ActiveCampaign y Baserow, cómo confirma ActiveCampaign si el resultado se envió también por WhatsApp y qué ocurre si el evento llega mientras existe una respuesta o seguimiento manual pendiente.
 
 ## Vercel
 
@@ -62,10 +64,10 @@ Crear un proyecto de Vercel independiente para la V2, framework Next.js, raíz d
 
 ## Pendientes detectados en los mensajes
 
-- No existe una secuencia que ofrezca o conduzca al estudio de perfil pago, ni se incluyó su checkout. SIN ESTUDIO conduce solamente al estudio gratuito.
-- ESTUDIO A/B/C no diferencia si el estudio ya efectuado fue gratuito o pago.
-- Faltan el enlace web de testimonios, el Reel de tres errores, el video de Ana y su hija, la imagen/fecha de la oferta y el video de beneficios del Plan Basic en la secuencia ESTUDIO.
-- Australia contiene enlaces de Canadá en los mensajes 3 y 5. Estados Unidos menciona Canadá en el mensaje 2 y enlaza la página de Canadá en el mensaje 3. La URL de Perfil de Reino Unido difiere de la utilizada en las demás secuencias y debe confirmarse.
+- SIN ESTUDIO conduce a la página del estudio en línea. Esa misma URL alojará las opciones que se construyan después.
+- El estudio pago no tendrá una secuencia automática. Un asesor lo ofrecerá durante una conversación cuando el lead quiera hacer el estudio acompañado; el CRM conservará `TIPO_ESTUDIO=PAGO` para registrar esa decisión.
+- Faltan el Reel de tres errores, el video de Ana y su hija, la imagen y regla de vigencia de la oferta del 25 %, y el video de beneficios del Plan Basic en la secuencia ESTUDIO.
+- La URL de Perfil de Reino Unido debe confirmarse.
+- El seguimiento detallado está en `docs/PENDIENTES-MENSAJES.md`.
 
-Pendiente: conectar Baserow y autenticación, completar los recursos anteriores, construir la secuencia del estudio pago, implementar la transición por hitos con ActiveCampaign y ampliar pantallas secundarias. Hotmart, ManyChat y ActiveCampaign quedan sin conexión durante esta etapa.
-
+Pendiente: conectar Baserow y autenticación, completar los recursos anteriores, implementar la transición por hitos con ActiveCampaign y ampliar pantallas secundarias. Hotmart, ManyChat y ActiveCampaign quedan sin conexión durante esta etapa.
