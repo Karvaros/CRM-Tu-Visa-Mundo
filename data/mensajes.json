@@ -1,0 +1,38 @@
+[
+  {
+    "id": "registro-1",
+    "titulo": "Primer contacto",
+    "texto": "Hola {{nombre}}, recibimos tu consulta sobre {{destino}}. ¿Podemos conversar sobre tu viaje?",
+    "siguienteId": "registro-2",
+    "diasHastaSiguiente": 1,
+    "soloDiasHabiles": true,
+    "borrador": true
+  },
+  {
+    "id": "registro-2",
+    "titulo": "Seguimiento inicial",
+    "texto": "Hola {{nombre}}, retomo tu consulta sobre {{destino}}. ¿Qué información necesitas para dar el próximo paso?",
+    "siguienteId": "registro-3",
+    "diasHastaSiguiente": 3,
+    "soloDiasHabiles": true,
+    "borrador": true
+  },
+  {
+    "id": "registro-3",
+    "titulo": "Último seguimiento de demostración",
+    "texto": "Hola {{nombre}}, ¿sigues interesado en revisar tu viaje a {{destino}}?",
+    "siguienteId": null,
+    "diasHastaSiguiente": 0,
+    "soloDiasHabiles": true,
+    "borrador": true
+  },
+  {
+    "id": "manual",
+    "titulo": "Retomar conversación",
+    "texto": "Hola {{nombre}}, retomo nuestra conversación como acordamos. ¿Ya tienes definida la fecha aproximada para viajar a {{destino}}?",
+    "siguienteId": null,
+    "diasHastaSiguiente": 0,
+    "soloDiasHabiles": false,
+    "borrador": true
+  }
+]
