@@ -10,7 +10,7 @@ Validación: `npm test`, `npm run typecheck`, `npm run build`.
 
 ## Estado
 
-Se conserva el diseño original de HOY y sus cuatro leads. HOY es funcional con búsqueda, filtros, cuatro grupos de pendientes, copiar, WhatsApp con texto, confirmación de envío, respuesta, reprogramación y ficha. LEADS permite encontrar todos los registros, incluso los futuros y cerrados; PIPELINE e HISTORIAL son vistas básicas; MENSAJES edita borradores; CONFIGURACIÓN permite reiniciar la demo.
+Se conserva el diseño original de HOY y sus cuatro leads. HOY es funcional con búsqueda, filtros, cuatro grupos de pendientes, copiar, WhatsApp con texto, confirmación de envío, respuesta, reprogramación y ficha. LEADS permite encontrar todos los registros, incluso los futuros y cerrados; PIPELINE e HISTORIAL son vistas básicas; MENSAJES permite revisar y editar las secuencias; CONFIGURACIÓN permite reiniciar la demo.
 
 La demo usa sessionStorage: conserva acciones, mensajes e historial al recargar la misma pestaña. No comparte datos entre asesores/dispositivos. No usar datos reales. No hay credenciales, envíos automáticos, autenticación ni conexiones externas implementadas.
 
@@ -23,7 +23,10 @@ La demo usa sessionStorage: conserva acciones, mensajes e historial al recargar 
 - Respondió pausa la secuencia y crea atención manual para hoy. Una reprogramación mantiene estado y último envío. Un envío manual termina esa acción sin reactivar la secuencia; el asesor puede programar otra desde LEADS.
 - Fin de secuencia elimina el pendiente automático y mantiene el lead en LEADS. CLIENTE registra conceptualmente venta; NO APTO e INACTIVO cierran el seguimiento sin borrar historial. Reabrir requiere cambiar estado y programar una acción manual.
 - Las versiones de lead y el bloqueo de guardado evitan confirmar dos veces el mismo envío.
-- Las plantillas de `data/mensajes.json` son ficticias, pendientes de revisión; editables desde MENSAJES en cada sesión. No se importaron los textos comerciales antiguos. Cambiar una plantilla no modifica envíos históricos ni fechas previamente programadas.
+- `data/mensajes.json` contiene 32 mensajes entregados por el usuario: 24 para SIN ESTUDIO (Canadá, Australia, Estados Unidos y Reino Unido) y 8 entradas para ESTUDIO A/B/C. Ninguno usa variables de nombre, para que pueda copiarse como difusión. Cambiar un mensaje no modifica envíos históricos ni fechas previamente programadas.
+- Los mensajes usan el día absoluto de su secuencia. Después de confirmar un envío, la próxima fecha se calcula con la diferencia entre el día del mensaje actual y el siguiente aplicable al segmento.
+- SIN ESTUDIO representa registros que todavía no hicieron el estudio. ESTUDIO A es perfil Alto, ESTUDIO B es Medio-Alto y ESTUDIO C es Medio. `TIPO_ESTUDIO` se guarda por separado (`NINGUNO`, `GRATUITO`, `PAGO`) para no confundir la calificación con la modalidad del estudio.
+- Los mensajes con marcadores, recursos faltantes o enlaces posiblemente cruzados tienen `REQUIERE_REVISION=true`. HOY bloquea Copiar, WhatsApp y Confirmar envío para esos mensajes hasta que se desmarque la revisión en MENSAJES.
 
 ## Capas y conexión futura a Baserow
 
@@ -37,9 +40,9 @@ Para Baserow, sustituir la creación del repositorio en el proveedor por un adap
 
 | Tabla | Campos previstos |
 | --- | --- |
-| LEADS | ID, VERSION, NOMBRE, APELLIDO, WHATSAPP, EMAIL, DESTINO, TIPO_VISA, ORIGEN, FECHA_INGRESO, ESTADO, ULTIMO_CONTACTO, ULTIMO_MENSAJE (relación), PROXIMO_CONTACTO, PROXIMA_ACCION, PROXIMO_MENSAJE (relación), SEGUIMIENTO_MANUAL, SECUENCIA_PAUSADA, ASESOR, NOTAS |
+| LEADS | ID, VERSION, NOMBRE, APELLIDO, WHATSAPP, EMAIL, DESTINO, TIPO_VISA, ORIGEN, SEGMENTO, TIPO_ESTUDIO, PERFIL_ESTUDIO, SECUENCIA_ID, FECHA_INGRESO, ESTADO, ULTIMO_CONTACTO, ULTIMO_MENSAJE (relación), PROXIMO_CONTACTO, PROXIMA_ACCION, PROXIMO_MENSAJE (relación), SEGUIMIENTO_MANUAL, SECUENCIA_PAUSADA, ASESOR, NOTAS |
 | INTERACCIONES | ID, LEAD (relación), TIPO, FECHA (UTC), DETALLE, MENSAJE (relación), MENSAJE_TEXTO (copia histórica), ASESOR |
-| MENSAJES | ID, TITULO, TEXTO, SIGUIENTE (relación), DIAS_HASTA_SIGUIENTE, SOLO_DIAS_HABILES, BORRADOR |
+| MENSAJES | ID, SECUENCIA_ID, SEGMENTOS, DESTINO, ORDEN, DIA_SECUENCIA, TITULO, TEXTO, RECURSO_TIPO, RECURSO_URL, SOLO_DIAS_HABILES, BORRADOR, REQUIERE_REVISION, OBSERVACIONES |
 
 Antes de habilitar datos reales: definir permisos/autenticación, paginación, validación de respuestas y estrategia de concurrencia/idempotencia para la escritura coordinada de lead + interacción. El adaptador Baserow no está implementado; no se asume atomicidad entre tablas. ASESOR es opcional y no depende de Augusto/Diana.
 
@@ -47,4 +50,11 @@ Antes de habilitar datos reales: definir permisos/autenticación, paginación, v
 
 Crear un proyecto de Vercel independiente para la V2, framework Next.js, raíz del repositorio, `npm ci` y `npm run build`, Node 22. Seleccionar `crm-v2-vercel` como rama del proyecto V2; no cambiar la rama ni el servicio de Render. La demo no requiere variables de entorno. Se puede desplegar sin Baserow, pero solo contiene datos ficticios. Este cambio no crea ni modifica despliegues.
 
-Pendiente: conectar Baserow y autenticación, revisar mensajes comerciales y ampliar pantallas secundarias. Hotmart, ManyChat y ActiveCampaign quedan fuera de esta etapa.
+## Pendientes detectados en los mensajes
+
+- No existe una secuencia que ofrezca o conduzca al estudio de perfil pago, ni se incluyó su checkout. SIN ESTUDIO conduce solamente al estudio gratuito.
+- ESTUDIO A/B/C no diferencia si el estudio ya efectuado fue gratuito o pago.
+- Faltan el enlace web de testimonios, el Reel de tres errores, el video de Ana y su hija, la imagen/fecha de la oferta y el video de beneficios del Plan Basic en la secuencia ESTUDIO.
+- Australia contiene enlaces de Canadá en los mensajes 3 y 5. Estados Unidos menciona Canadá en el mensaje 2 y enlaza la página de Canadá en el mensaje 3. La URL de Perfil de Reino Unido difiere de la utilizada en las demás secuencias y debe confirmarse.
+
+Pendiente: conectar Baserow y autenticación, completar los recursos anteriores, construir la secuencia del estudio pago y ampliar pantallas secundarias. Hotmart, ManyChat y ActiveCampaign quedan fuera de esta etapa.

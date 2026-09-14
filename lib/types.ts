@@ -12,6 +12,17 @@ export const leadStatuses = [
 ] as const;
 export type LeadStatus = (typeof leadStatuses)[number];
 export type LeadPriority = "NUEVO" | "ATRASADO" | "HOY" | "MANUAL";
+export const messageSegments = [
+  "SIN_ESTUDIO",
+  "ESTUDIO_A",
+  "ESTUDIO_B",
+  "ESTUDIO_C",
+] as const;
+export type MessageSegment = (typeof messageSegments)[number];
+export type StudyType = "NINGUNO" | "GRATUITO" | "PAGO";
+export type StudyProfile = "A" | "B" | "C";
+export type ResourceType =
+  "TEXTO" | "WEB" | "YOUTUBE" | "REEL" | "IMAGEN" | "ARTICULO";
 export interface Lead {
   id: string;
   version: number;
@@ -22,6 +33,10 @@ export interface Lead {
   destino: string;
   tipoVisa: string;
   origen: string;
+  segmento: MessageSegment;
+  tipoEstudio: StudyType;
+  perfilEstudio?: StudyProfile;
+  secuenciaId: string;
   fechaIngreso: string;
   estado: LeadStatus;
   ultimoContacto?: string;
@@ -36,12 +51,19 @@ export interface Lead {
 }
 export interface Message {
   id: string;
+  secuenciaId: string;
+  segmento: MessageSegment[];
+  destino: string;
+  orden: number;
+  diaSecuencia: number;
   titulo: string;
   texto: string;
-  siguienteId: string | null;
-  diasHastaSiguiente: number;
+  recursoTipo: ResourceType;
+  recursoUrl?: string;
   soloDiasHabiles: boolean;
   borrador: boolean;
+  requiereRevision: boolean;
+  observaciones: string[];
 }
 export interface Interaction {
   id: string;

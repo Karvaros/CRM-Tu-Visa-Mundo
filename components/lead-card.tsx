@@ -15,7 +15,9 @@ export function LeadCard({ lead }: { lead: Lead }) {
     (item) => item.id === lead.proximoMensajeId,
   );
   const text = renderMessage(message, lead);
-  const canSend = Boolean(text && priority(lead, date));
+  const canSend = Boolean(
+    text && priority(lead, date) && !message?.requiereRevision,
+  );
   const label =
     leadStatuses.indexOf(lead.estado) >= 0
       ? lead.estado.replaceAll("_", " ").replace("CONVERSACION", "CONVERSACIÓN")
@@ -46,6 +48,11 @@ export function LeadCard({ lead }: { lead: Lead }) {
           <p className="muted">
             Origen: {lead.origen} · Ingresó: {dateLabel(lead.fechaIngreso)}
           </p>
+          <p className="muted">
+            {lead.tipoEstudio === "NINGUNO"
+              ? "Sin estudio de perfil"
+              : `Estudio ${lead.tipoEstudio.toLowerCase()} · Perfil ${lead.perfilEstudio ?? "sin clasificar"}`}
+          </p>
         </div>
         <span className={`status status--${lead.estado.toLowerCase()}`}>
           {label}
@@ -75,26 +82,47 @@ export function LeadCard({ lead }: { lead: Lead }) {
       <div className="message-box">
         <div className="message-box__title">
           {message?.titulo ?? "Sin mensaje pendiente"}{" "}
-          {message?.borrador && "· Borrador de demostración"}
+          {message?.requiereRevision
+            ? "· Requiere revisión"
+            : "· Mensaje establecido"}
         </div>
         <p>{text || "Revisa la ficha y define la próxima acción."}</p>
+        {message?.recursoTipo !== "TEXTO" && (
+          <p className="resource-note">
+            Recurso: {message?.recursoTipo}
+            {message?.recursoUrl
+              ? ` · ${message.recursoUrl}`
+              : " · enlace pendiente"}
+          </p>
+        )}
+        {message?.observaciones.map((note) => (
+          <p className="review-note" key={note}>
+            {note}
+          </p>
+        ))}
       </div>
       <div className="actions">
         <button
           className="button button--secondary"
-          disabled={!text}
+          disabled={!text || message?.requiereRevision}
           onClick={copy}
         >
           Copiar mensaje
         </button>
-        <a
-          className="button button--primary"
-          href={`https://wa.me/${lead.whatsapp.replace(/\D/g, "")}${text ? `?text=${encodeURIComponent(text)}` : ""}`}
-          target="_blank"
-          rel="noreferrer"
-        >
-          Abrir WhatsApp
-        </a>
+        {message?.requiereRevision ? (
+          <span className="button button--primary button--disabled">
+            Revisar antes de enviar
+          </span>
+        ) : (
+          <a
+            className="button button--primary"
+            href={`https://wa.me/${lead.whatsapp.replace(/\D/g, "")}${text ? `?text=${encodeURIComponent(text)}` : ""}`}
+            target="_blank"
+            rel="noreferrer"
+          >
+            Abrir WhatsApp
+          </a>
+        )}
         <button
           className="button button--success"
           disabled={busy || !canSend}
@@ -224,6 +252,12 @@ export function LeadCard({ lead }: { lead: Lead }) {
             <dd>{lead.email ?? "Sin email"}</dd>
             <dt>Asesor</dt>
             <dd>{lead.asesor ?? "Sin asignar"}</dd>
+            <dt>Segmento de mensajes</dt>
+            <dd>{lead.segmento.replaceAll("_", " ")}</dd>
+            <dt>Tipo de estudio</dt>
+            <dd>{lead.tipoEstudio}</dd>
+            <dt>Perfil de estudio</dt>
+            <dd>{lead.perfilEstudio ?? "No aplica"}</dd>
             <dt>Notas</dt>
             <dd>{lead.notas ?? "Sin notas"}</dd>
             <dt>Último mensaje</dt>

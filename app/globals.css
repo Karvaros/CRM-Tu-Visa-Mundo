@@ -52,6 +52,7 @@ p { margin: 0; }
 .button--ghost { background: #fff; color: #4b6178; border-color: #dce5ef; }
 .button:hover { transform: translateY(-1px); }
 button:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+.button--disabled { opacity: .5; cursor: not-allowed; }
 :focus-visible { outline: 3px solid #378bd2; outline-offset: 3px; }
 .demo-note { padding: 12px 16px; margin-bottom: 22px; border: 1px solid #cfdfed; border-radius: 10px; color: #395773; background: #eaf2fb; font-size: 13px; }
 .pause-note { margin-top: 12px; color: #8b5b00; font-size: 13px; }
@@ -72,6 +73,16 @@ dd { margin: 4px 0 0; overflow-wrap: anywhere; }
 .history-item { padding: 18px 0; border-bottom: 1px solid #dde6f0; line-height: 1.6; }
 .history-item blockquote { margin: 12px 0; padding: 12px; background: #f4f7fb; white-space: pre-wrap; }
 .message-box p { white-space: pre-wrap; overflow-wrap: anywhere; }
+.resource-note { margin-top: 10px; font-size: 12px; color: #486b8c !important; }
+.review-note { margin-top: 10px; padding: 9px 11px; border-radius: 7px; background: #fff0d5; color: #7b5100 !important; font-size: 12px; }
+.review-summary { margin: 0 0 22px; padding: 16px; border: 1px solid #f1cb84; border-radius: 11px; background: #fff8e9; color: #6f4a00; }
+.review-summary p { margin-top: 5px; line-height: 1.5; }
+.review-filter { align-self: end; padding-bottom: 11px; }
+.message-editor-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 8px 0 14px; }
+.review-badge, .ready-badge { padding: 6px 9px; border-radius: 999px; white-space: nowrap; font-size: 11px; font-weight: 800; }
+.review-badge { background: #fff0d5; color: #7b5100; }
+.ready-badge { background: #e3f5ea; color: #1f6f46; }
+.editor-grid { display: grid; grid-template-columns: 180px 1fr; gap: 14px; }
 .toast { position: fixed; bottom: 20px; right: 20px; z-index: 20; max-width: min(480px, calc(100vw - 40px)); background: #123d31; color: white; border-radius: 12px; padding: 16px; box-shadow: 0 6px 25px #0002; }
 .toast button { margin-left: 12px; color: white; background: transparent; border: 0; cursor: pointer; }
 .error-banner { padding: 16px; background: #ffe6e6; color: #802222; }
@@ -88,6 +99,7 @@ dd { margin: 4px 0 0; overflow-wrap: anywhere; }
 }
 @media (max-width: 640px) {
   .pipeline { grid-template-columns: 1fr; }
+  .editor-grid { grid-template-columns: 1fr; }
   .sidebar nav { grid-template-columns: repeat(2, 1fr); }
   .page-header, .lead-card__top { flex-direction: column; }
   .metrics, .lead-meta { grid-template-columns: 1fr; }

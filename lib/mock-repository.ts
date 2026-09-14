@@ -4,7 +4,7 @@ import { createMockData } from "./mock-data";
 import type { CrmRepository } from "./repository";
 import type { CrmData } from "./types";
 
-const KEY = "tvm-crm-demo-v2";
+const KEY = "tvm-crm-demo-v3";
 /** Isolated per tab, survives reload. No process-global state on Vercel. */
 export function createMockRepository(
   storage: Storage,
@@ -45,14 +45,27 @@ export function createMockRepository(
       const data = read();
       if (!message.texto.trim() || !message.titulo.trim())
         throw new Error("El título y el texto son obligatorios.");
-      if (
-        !Number.isInteger(message.diasHastaSiguiente) ||
-        message.diasHastaSiguiente < 0 ||
-        (message.siguienteId && message.diasHastaSiguiente < 1)
-      )
+      if (/\{\{?nombre\}?\}/i.test(message.texto))
         throw new Error(
-          "El intervalo debe ser de al menos un día cuando hay un siguiente mensaje.",
+          "Los mensajes de difusión no pueden incluir una variable de nombre.",
         );
+      if (!Number.isInteger(message.diaSecuencia) || message.diaSecuencia < 0)
+        throw new Error("El día de secuencia debe ser cero o mayor.");
+      if (!message.requiereRevision) {
+        if (/\[link[^\]]*\]/i.test(message.texto))
+          throw new Error("Reemplaza el marcador de enlace antes de aprobar.");
+        if (message.recursoTipo !== "TEXTO" && !message.recursoUrl)
+          throw new Error("Agrega el recurso antes de aprobar el mensaje.");
+        if (
+          ["WEB", "YOUTUBE", "REEL", "ARTICULO"].includes(
+            message.recursoTipo,
+          ) &&
+          !message.texto.includes(message.recursoUrl ?? "")
+        )
+          throw new Error(
+            "Incluye el enlace del recurso dentro del texto antes de aprobar.",
+          );
+      }
       if (!data.mensajes.some((item) => item.id === message.id))
         throw new Error("El mensaje no existe.");
       data.mensajes = data.mensajes.map((item) =>

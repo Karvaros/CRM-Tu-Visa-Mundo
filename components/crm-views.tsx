@@ -41,6 +41,8 @@ export function CrmView({ view }: { view: string }) {
   const { data, date, busy, reset } = useCrm();
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("");
+  const [messageSequence, setMessageSequence] = useState("");
+  const [reviewOnly, setReviewOnly] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
   if (!data) return <p role="status">Cargando demostración…</p>;
   const leads = data.leads.filter(
@@ -236,14 +238,55 @@ export function CrmView({ view }: { view: string }) {
       {view === "mensajes" && (
         <>
           <p className="empty-state">
-            Plantillas de demostración editables. Variables disponibles:{" "}
-            {"{{nombre}}, {{destino}}, {{asesor}}"}. Los cambios no alteran el
+            Mensajes establecidos para difusión, sin variable de nombre. Se
+            separan en SIN ESTUDIO y ESTUDIO A/B/C. Los cambios no alteran el
             historial ni fechas ya programadas.
           </p>
+          <div className="review-summary">
+            <strong>Falta una secuencia para el estudio pago.</strong>
+            <p>
+              Los mensajes SIN ESTUDIO ofrecen únicamente el estudio gratuito en
+              línea. Los mensajes A/B/C no distinguen si el estudio previo fue
+              gratuito o pago.
+            </p>
+          </div>
+          <div className="filters">
+            <label>
+              Secuencia
+              <select
+                value={messageSequence}
+                onChange={(event) => setMessageSequence(event.target.value)}
+              >
+                <option value="">Todas las secuencias</option>
+                {[
+                  ...new Set(data.mensajes.map((item) => item.secuenciaId)),
+                ].map((sequence) => (
+                  <option key={sequence} value={sequence}>
+                    {sequence.replaceAll("-", " ").toUpperCase()}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="checkbox-label review-filter">
+              <input
+                type="checkbox"
+                checked={reviewOnly}
+                onChange={(event) => setReviewOnly(event.target.checked)}
+              />
+              Mostrar solo mensajes que requieren revisión
+            </label>
+          </div>
           <div className="lead-list">
-            {data.mensajes.map((message) => (
-              <MessageEditor key={message.id} message={message} />
-            ))}
+            {data.mensajes
+              .filter(
+                (message) =>
+                  (!messageSequence ||
+                    message.secuenciaId === messageSequence) &&
+                  (!reviewOnly || message.requiereRevision),
+              )
+              .map((message) => (
+                <MessageEditor key={message.id} message={message} />
+              ))}
           </div>
         </>
       )}
@@ -313,14 +356,27 @@ function MessageEditor({ message }: { message: Message }) {
           ...message,
           titulo: String(form.get("titulo")),
           texto: String(form.get("texto")),
-          diasHastaSiguiente: Number(
-            form.get("dias") ?? message.diasHastaSiguiente,
-          ),
+          diaSecuencia: Number(form.get("dia")),
+          recursoUrl: String(form.get("recursoUrl") || "") || undefined,
           soloDiasHabiles: form.get("habiles") === "on",
+          requiereRevision: form.get("revision") === "on",
         });
       }}
     >
-      <div className="eyebrow">{message.id} · borrador</div>
+      <div className="eyebrow">
+        {message.secuenciaId.replaceAll("-", " ")} ·{" "}
+        {message.segmento.join(" / ")}
+      </div>
+      <div className="message-editor-heading">
+        <h2>
+          Día {message.diaSecuencia} · {message.titulo}
+        </h2>
+        <span
+          className={message.requiereRevision ? "review-badge" : "ready-badge"}
+        >
+          {message.requiereRevision ? "Requiere revisión" : "Establecido"}
+        </span>
+      </div>
       <label>
         Título
         <input
@@ -340,19 +396,28 @@ function MessageEditor({ message }: { message: Message }) {
           defaultValue={message.texto}
         />
       </label>
-      {message.siguienteId && (
+      <div className="editor-grid">
         <label>
-          Días desde el envío confirmado hasta el siguiente mensaje
+          Día de la secuencia
           <input
-            name="dias"
+            name="dia"
             type="number"
             required
-            min={1}
+            min={0}
             max={365}
-            defaultValue={message.diasHastaSiguiente}
+            defaultValue={message.diaSecuencia}
           />
         </label>
-      )}
+        <label>
+          Recurso ({message.recursoTipo})
+          <input
+            name="recursoUrl"
+            type="url"
+            placeholder="Enlace pendiente"
+            defaultValue={message.recursoUrl}
+          />
+        </label>
+      </div>
       <label className="checkbox-label">
         <input
           name="habiles"
@@ -361,11 +426,21 @@ function MessageEditor({ message }: { message: Message }) {
         />
         Mover al lunes si el siguiente contacto cae en fin de semana
       </label>
-      <p className="muted">
-        Siguiente mensaje: {message.siguienteId ?? "Fin de secuencia"}
-      </p>
+      <label className="checkbox-label">
+        <input
+          name="revision"
+          type="checkbox"
+          defaultChecked={message.requiereRevision}
+        />
+        Bloquear envío hasta completar la revisión
+      </label>
+      {message.observaciones.map((note) => (
+        <p className="review-note" key={note}>
+          {note}
+        </p>
+      ))}
       <button className="button button--primary" disabled={busy}>
-        Guardar borrador
+        Guardar cambios
       </button>
     </form>
   );

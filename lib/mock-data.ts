@@ -1,6 +1,6 @@
 import templates from "../data/mensajes.json";
 import { addDays } from "./dates";
-import type { CrmData, Lead } from "./types";
+import type { CrmData, Lead, Message } from "./types";
 
 export function createMockData(date: string): CrmData {
   const base: Lead = {
@@ -13,17 +13,20 @@ export function createMockData(date: string): CrmData {
     destino: "Canadá",
     tipoVisa: "Turismo",
     origen: "Landing Canadá",
+    segmento: "SIN_ESTUDIO",
+    tipoEstudio: "NINGUNO",
+    secuenciaId: "sin-estudio-canada",
     fechaIngreso: date,
     estado: "NUEVO",
     proximoContacto: date,
     proximaAccion: "Enviar primer mensaje",
-    proximoMensajeId: "registro-1",
+    proximoMensajeId: "sin-estudio-canada-1",
     seguimientoManual: false,
     secuenciaPausada: false,
     asesor: "Asesor principal",
   };
   return {
-    mensajes: structuredClone(templates),
+    mensajes: structuredClone(templates as Message[]),
     interacciones: [],
     leads: [
       base,
@@ -35,14 +38,15 @@ export function createMockData(date: string): CrmData {
         email: undefined,
         whatsapp: "+57 300 555 0002",
         destino: "Estados Unidos",
+        secuenciaId: "sin-estudio-eeuu",
         origen: "Meta Ads",
         fechaIngreso: addDays(date, -3),
         estado: "SEGUIMIENTO",
         ultimoContacto: `${addDays(date, -2)}T15:00:00Z`,
-        ultimoMensajeId: "registro-1",
+        ultimoMensajeId: "sin-estudio-eeuu-1",
         proximoContacto: addDays(date, -1),
         proximaAccion: "Enviar seguimiento inicial",
-        proximoMensajeId: "registro-2",
+        proximoMensajeId: "sin-estudio-eeuu-2",
       },
       {
         ...base,
@@ -51,14 +55,18 @@ export function createMockData(date: string): CrmData {
         apellido: "Ruiz",
         email: undefined,
         whatsapp: "+57 315 555 0003",
-        destino: "Australia",
+        destino: "Canadá",
         origen: "Instagram orgánico",
+        segmento: "ESTUDIO_A",
+        tipoEstudio: "GRATUITO",
+        perfilEstudio: "A",
+        secuenciaId: "estudio-canada",
         fechaIngreso: addDays(date, -6),
         estado: "SEGUIMIENTO",
         ultimoContacto: `${addDays(date, -3)}T15:00:00Z`,
-        ultimoMensajeId: "registro-2",
-        proximaAccion: "Enviar último seguimiento",
-        proximoMensajeId: "registro-3",
+        ultimoMensajeId: "estudio-canada-1",
+        proximaAccion: "Enviar resultado del estudio de perfil",
+        proximoMensajeId: "estudio-canada-2-ab",
       },
       {
         ...base,
@@ -68,12 +76,13 @@ export function createMockData(date: string): CrmData {
         email: undefined,
         whatsapp: "+54 9 11 5555 0004",
         destino: "Reino Unido",
+        secuenciaId: "sin-estudio-uk",
         origen: "Lista de documentos",
         fechaIngreso: addDays(date, -11),
         estado: "EN_CONVERSACION",
         ultimoContacto: `${addDays(date, -2)}T15:00:00Z`,
-        proximaAccion: "Retomar conversación y confirmar fecha de viaje",
-        proximoMensajeId: "manual",
+        proximaAccion: "Invitar al estudio gratuito en línea",
+        proximoMensajeId: "sin-estudio-uk-2",
         seguimientoManual: true,
         secuenciaPausada: true,
       },

@@ -20,14 +20,19 @@ export function priority(lead: Lead, date: string): LeadPriority | null {
 }
 export function renderMessage(
   message: Message | undefined,
-  lead: Lead,
+  _lead: Lead,
 ): string {
-  return (
-    message?.texto.replace(
-      /\{\{(nombre|destino|asesor)\}\}/g,
-      (_, key: "nombre" | "destino" | "asesor") => lead[key] ?? "",
-    ) ?? ""
-  );
+  return message?.texto ?? "";
+}
+function nextMessage(data: CrmData, lead: Lead, current: Message) {
+  return data.mensajes
+    .filter(
+      (item) =>
+        item.secuenciaId === lead.secuenciaId &&
+        item.orden > current.orden &&
+        item.segmento.includes(lead.segmento),
+    )
+    .sort((a, b) => a.orden - b.orden)[0];
 }
 export function applyCommand(
   data: CrmData,
@@ -58,16 +63,22 @@ export function applyCommand(
       throw new Error(
         "El mensaje cambió o no está disponible. Revisa el texto.",
       );
+    if (message.requiereRevision)
+      throw new Error("Completa la revisión del mensaje antes de enviarlo.");
     lead.ultimoContacto = now.toISOString();
     lead.ultimoMensajeId = message.id;
     if (lead.estado === "NUEVO") lead.estado = "CONTACTADO";
     const next =
-      !lead.secuenciaPausada && !lead.seguimientoManual && message.siguienteId
-        ? result.mensajes.find((item) => item.id === message!.siguienteId)
+      !lead.secuenciaPausada && !lead.seguimientoManual
+        ? nextMessage(result, lead, message)
         : undefined;
     lead.proximoMensajeId = next?.id;
     lead.proximoContacto = next
-      ? addDays(date, message.diasHastaSiguiente, message.soloDiasHabiles)
+      ? addDays(
+          date,
+          next.diaSecuencia - message.diaSecuencia,
+          next.soloDiasHabiles,
+        )
       : undefined;
     lead.proximaAccion = next
       ? next.titulo
@@ -82,7 +93,7 @@ export function applyCommand(
     lead.secuenciaPausada = true;
     lead.seguimientoManual = true;
     lead.proximoContacto = date;
-    lead.proximoMensajeId = "manual";
+    lead.proximoMensajeId = undefined;
     lead.proximaAccion = "Revisar respuesta y acordar el próximo paso";
     tipo = "RESPONDIO";
     detalle = "Respondió. Secuencia pausada; requiere atención manual.";
@@ -95,7 +106,6 @@ export function applyCommand(
     lead.proximoContacto = command.fecha;
     lead.proximaAccion = command.accion.trim();
     lead.seguimientoManual = true;
-    lead.proximoMensajeId ??= "manual";
     tipo = "REPROGRAMADO";
     detalle = `${command.fecha}: ${lead.proximaAccion}`;
   } else {

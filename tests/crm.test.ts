@@ -39,6 +39,11 @@ test("agenda clasifica los cuatro grupos y excluye fechas futuras, pausados y ce
 });
 test("envío atrasado calcula desde hoy, guarda texto real y no muta entrada", () => {
   const data = seed();
+  data.mensajes = data.mensajes.map((message) =>
+    message.id === "sin-estudio-eeuu-2"
+      ? { ...message, requiereRevision: false }
+      : message,
+  );
   const result = applyCommand(data, sent(data, 1), now, "event-1");
   assert.equal(result.leads[1].proximoContacto, "2026-09-17");
   assert.equal(result.leads[1].ultimoContacto, now.toISOString());
@@ -77,9 +82,7 @@ test("respuesta pausa secuencia, conserva último envío y habilita atención ma
   assert.equal(result.leads[1].estado, "EN_CONVERSACION");
   assert.equal(result.leads[1].ultimoContacto, lead.ultimoContacto);
   assert.equal(priority(result.leads[1], "2026-09-14"), "MANUAL");
-  const afterManual = applyCommand(result, sent(result, 1), now, "event-2");
-  assert.equal(afterManual.leads[1].proximoContacto, undefined);
-  assert.equal(afterManual.leads[1].secuenciaPausada, true);
+  assert.equal(result.leads[1].proximoMensajeId, undefined);
 });
 test("reprogramar mantiene estado, pausa y último envío; rechaza fechas pasadas", () => {
   const data = seed();
@@ -109,6 +112,12 @@ test("reprogramar mantiene estado, pausa y último envío; rechaza fechas pasada
 });
 test("fin de secuencia no inventa otro mensaje ni cierra la venta", () => {
   const data = seed();
+  data.leads[2] = {
+    ...data.leads[2],
+    segmento: "SIN_ESTUDIO",
+    secuenciaId: "sin-estudio-australia",
+    proximoMensajeId: "sin-estudio-australia-6",
+  };
   const result = applyCommand(data, sent(data, 2), now, "event-1");
   assert.equal(result.leads[2].proximoMensajeId, undefined);
   assert.equal(result.leads[2].proximoContacto, undefined);
@@ -147,14 +156,78 @@ test("repositorio persiste cambios y plantillas sin reescribir historial", async
   await repo.execute(sent(data));
   await repo.saveMessage({
     ...data.mensajes[0],
-    texto: "Texto editado {{nombre}}",
+    texto: "Texto de difusión editado",
   });
   const reloaded = await createMockRepository(storage, () => now).load();
   assert.equal(reloaded.leads[0].estado, "CONTACTADO");
-  assert.equal(reloaded.mensajes[0].texto, "Texto editado {{nombre}}");
+  assert.equal(reloaded.mensajes[0].texto, "Texto de difusión editado");
   assert.equal(reloaded.interacciones[0].mensajeTexto, sent(data).mensajeTexto);
   await assert.rejects(() =>
-    repo.saveMessage({ ...data.mensajes[0], diasHastaSiguiente: 0 }),
+    repo.saveMessage({ ...data.mensajes[0], diaSecuencia: -1 }),
   );
   assert.equal((await repo.reset()).interacciones.length, 0);
+});
+test("mensajes de difusión no incluyen variables de nombre y mantienen segmentos", () => {
+  const data = seed();
+  assert.equal(data.mensajes.length, 32);
+  assert.equal(
+    data.mensajes.some((message) => /\{\{?nombre\}?\}/i.test(message.texto)),
+    false,
+  );
+  const alto = data.mensajes.find(
+    (message) => message.id === "estudio-canada-2-ab",
+  )!;
+  const medio = data.mensajes.find(
+    (message) => message.id === "estudio-canada-2-c",
+  )!;
+  assert.deepEqual(alto.segmento, ["ESTUDIO_A", "ESTUDIO_B"]);
+  assert.deepEqual(medio.segmento, ["ESTUDIO_C"]);
+  assert.equal(
+    data.mensajes.filter((message) => message.requiereRevision).length,
+    11,
+  );
+});
+test("la secuencia A/B y la C convergen después del mensaje de resultado", () => {
+  const data = seed();
+  const alto = applyCommand(data, sent(data, 2), now, "event-a");
+  assert.equal(alto.leads[2].proximoMensajeId, "estudio-canada-3");
+  assert.equal(alto.leads[2].proximoContacto, "2026-09-21");
+  const medioData = seed();
+  medioData.leads[2] = {
+    ...medioData.leads[2],
+    segmento: "ESTUDIO_C",
+    perfilEstudio: "C",
+    proximoMensajeId: "estudio-canada-2-c",
+  };
+  const medio = applyCommand(medioData, sent(medioData, 2), now, "event-c");
+  assert.equal(medio.leads[2].proximoMensajeId, "estudio-canada-3");
+});
+test("mensajes pendientes o personalizados no pueden aprobarse ni enviarse", async () => {
+  const data = seed();
+  assert.throws(
+    () => applyCommand(data, sent(data, 1), now, "event-1"),
+    /revisión/,
+  );
+  const values = new Map<string, string>();
+  const storage = {
+    getItem: (key: string) => values.get(key) ?? null,
+    setItem: (key: string, value: string) => void values.set(key, value),
+  } as Storage;
+  const repo = createMockRepository(storage, () => now);
+  const stored = await repo.load();
+  await assert.rejects(
+    () =>
+      repo.saveMessage({
+        ...stored.mensajes[0],
+        texto: "Hola {{nombre}}",
+      }),
+    /nombre/,
+  );
+  const placeholder = stored.mensajes.find(
+    (message) => message.id === "estudio-canada-3",
+  )!;
+  await assert.rejects(
+    () => repo.saveMessage({ ...placeholder, requiereRevision: false }),
+    /marcador/,
+  );
 });
