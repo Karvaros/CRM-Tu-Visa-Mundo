@@ -31,10 +31,10 @@
 .study-preview-note { padding: 12px 14px; border-radius: 10px; background: #f2f7fc; color: #5b748d !important; font-size: 12px; line-height: 1.5; }
 .study-actions { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 38px; }
 .study-back { border: 0; padding: 13px 4px; background: transparent; color: #55728f; cursor: pointer; font-weight: 800; }
-.study-next { min-height: 52px; min-width: 180px; border: 0; border-radius: 11px; padding: 12px 20px; background: #316fa9; box-shadow: 0 8px 18px #316fa933; color: white; cursor: pointer; font-size: 14px; font-weight: 850; }
+.study-next { min-height: 52px; min-width: 180px; border: 0; border-radius: 11px; padding: 12px 20px; background: #f4c84a; box-shadow: 0 8px 18px #a878132e; color: #17334f; cursor: pointer; font-size: 14px; font-weight: 850; }
 .study-next span { margin-left: 13px; font-size: 19px; vertical-align: -1px; }
-.study-next:hover:not(:disabled) { background: #245e95; transform: translateY(-1px); }
-.study-next:disabled { background: #b4c8da; box-shadow: none; }
+.study-next:hover:not(:disabled) { background: #e8b92e; transform: translateY(-1px); }
+.study-next:disabled { background: #e4e9ed; color: #71869a; box-shadow: none; }
 .study-result { display: grid; justify-items: start; gap: 12px; }
 .study-result__icon { display: grid; place-items: center; width: 52px; height: 52px; border-radius: 50%; background: #e5f3eb; color: #276d49; font-size: 26px; font-weight: 900; margin-bottom: 14px; }
 .study-result__detail { font-size: 14px; }

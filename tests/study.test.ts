@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { classifyStudy, studyOptions, type StudyAnswers } from "../lib/study";
+import { classifyStudy, presentStudyQuestion, studyOptions, studyPages, updateStudyAnswer, type StudyAnswers } from "../lib/study";
 
 const base: StudyAnswers = {
   destino: studyOptions.destino[0],
@@ -35,4 +35,33 @@ test("no inventa clasificación para respuestas incompletas o cruces sin ruta", 
   const result = classifyStudy({ ...base, viajes: "Sí: Solo países de Latinoamérica" });
   assert.equal(result.perfil, "PENDIENTE");
   assert.equal(result.correo, null);
+});
+
+test("un viajero solo recibe preguntas singulares y nunca la opción de pasaportes mixtos", () => {
+  const passport = presentStudyQuestion(studyPages[3], base);
+  assert.equal(passport.label, "¿Tienes pasaporte vigente?");
+  assert.deepEqual(passport.options.map((option) => option.label), [
+    "Sí, tengo pasaporte vigente",
+    "No tengo pasaporte vigente",
+  ]);
+  assert.equal(presentStudyQuestion(studyPages[4], base).label, "¿A qué te dedicas?");
+  assert.equal(presentStudyQuestion(studyPages[8], base).label, "¿Tienes familiares directos en el país de destino?");
+  assert.equal(classifyStudy({ ...base, pasaportes: passport.options[1].value }).perfil, "D");
+});
+
+test("cambiar un grupo a viajero solo invalida un pasaporte mixto anterior", () => {
+  const group = { ...base, grupo: studyOptions.grupo[2], pasaportes: studyOptions.pasaportes[1] };
+  assert.equal(presentStudyQuestion(studyPages[3], group).options.length, 3);
+  const solo = updateStudyAnswer(group, "grupo", studyOptions.grupo[0]);
+  assert.equal(solo.pasaportes, undefined);
+  assert.equal(solo.ocupacion, undefined);
+  assert.equal(solo.lazos, undefined);
+  assert.equal(classifyStudy(solo).perfil, "PENDIENTE");
+  assert.equal(group.pasaportes, studyOptions.pasaportes[1]);
+});
+
+test("cambiar de destino vuelve a pedir los lazos familiares de ese país", () => {
+  const changed = updateStudyAnswer(base, "destino", studyOptions.destino[2]);
+  assert.equal(changed.lazos, undefined);
+  assert.equal(changed.pasaportes, base.pasaportes);
 });

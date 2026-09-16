@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { classifyStudy, studyOptions, studyPages, type StudyAnswers, type StudyOutcome } from "@/lib/study";
+import { classifyStudy, presentStudyQuestion, studyPages, updateStudyAnswer, type StudyAnswers, type StudyOutcome } from "@/lib/study";
 import "./study.css";
 
 const TOTAL_PAGES = studyPages.length + 1;
@@ -11,8 +11,9 @@ export default function StudyPage() {
   const [answers, setAnswers] = useState<StudyAnswers>({});
   const [outcome, setOutcome] = useState<StudyOutcome | null>(null);
   const questionPage = studyPages[page];
-  const ready = questionPage
-    ? questionPage.fields.every((field) => Boolean(answers[field.key]))
+  const question = questionPage ? presentStudyQuestion(questionPage, answers) : null;
+  const ready = question
+    ? question.options.some((option) => option.value === answers[question.key])
     : Boolean(answers.nombre?.trim() && answers.email?.trim() && answers.telefono?.trim());
 
   function next(event: React.FormEvent<HTMLFormElement>) {
@@ -47,31 +48,29 @@ export default function StudyPage() {
               <form onSubmit={next}>
                 <div className="study-intro">
                   <span className="study-kicker">{questionPage?.title ?? "Tus datos"}</span>
-                  <h1>{questionPage?.fields[0].label ?? "¿Dónde te enviamos el resultado?"}</h1>
-                  <p>{questionPage?.subtitle ?? "Déjanos tus datos para identificar tu estudio. En esta vista de prueba no se guardan ni envían respuestas."}</p>
+                  <h1>{question?.label ?? "¿Dónde te enviamos el resultado?"}</h1>
+                  <p>{question?.subtitle ?? "Déjanos tus datos para identificar tu estudio. En esta vista de prueba no se guardan ni envían respuestas."}</p>
                 </div>
-                {questionPage ? (
+                {question ? (
                   <div className="study-questions">
-                    {questionPage.fields.map((field) => (
-                      <fieldset className="study-question" key={field.key}>
-                        <legend className="study-visually-hidden">{field.label} (obligatorio)</legend>
-                        <div className="study-options">
-                          {studyOptions[field.key].map((option) => (
-                            <label className={`study-option ${answers[field.key] === option ? "study-option--selected" : ""}`} key={option}>
-                              <input
-                                type="radio"
-                                name={field.key}
-                                value={option}
-                                checked={answers[field.key] === option}
-                                onChange={() => setAnswers((current) => ({ ...current, [field.key]: option }))}
-                              />
-                              <span className="study-option__mark" aria-hidden="true" />
-                              <span>{option}</span>
-                            </label>
-                          ))}
-                        </div>
-                      </fieldset>
-                    ))}
+                    <fieldset className="study-question">
+                      <legend className="study-visually-hidden">{question.label} (obligatorio)</legend>
+                      <div className="study-options">
+                        {question.options.map((option) => (
+                          <label className={`study-option ${answers[question.key] === option.value ? "study-option--selected" : ""}`} key={option.value}>
+                            <input
+                              type="radio"
+                              name={question.key}
+                              value={option.value}
+                              checked={answers[question.key] === option.value}
+                              onChange={() => setAnswers((current) => updateStudyAnswer(current, question.key, option.value))}
+                            />
+                            <span className="study-option__mark" aria-hidden="true" />
+                            <span>{option.label}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </fieldset>
                   </div>
                 ) : (
                   <div className="study-contact">

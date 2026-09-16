@@ -107,6 +107,70 @@ export const studyPages = [
   },
 ] as const;
 
+export type StudyQuestionKey = keyof typeof studyOptions;
+type StudyPage = (typeof studyPages)[number];
+
+/** La presentación cambia según el grupo; los valores guardados siguen siendo los del formulario original. */
+export function presentStudyQuestion(page: StudyPage, answers: StudyAnswers) {
+  const field = page.fields[0];
+  const solo = answers.grupo === studyOptions.grupo[0];
+  let label: string = field.label;
+  let subtitle: string = page.subtitle;
+  let options = (studyOptions[field.key] as readonly string[]).map((value) => ({ value, label: value }));
+
+  if (solo) {
+    if (field.key === "pasaportes") {
+      label = "¿Tienes pasaporte vigente?";
+      subtitle = "Selecciona la opción que corresponda a tu pasaporte.";
+      options = [
+        { value: studyOptions.pasaportes[0], label: "Sí, tengo pasaporte vigente" },
+        { value: studyOptions.pasaportes[2], label: "No tengo pasaporte vigente" },
+      ];
+    } else if (field.key === "ocupacion") {
+      label = "¿A qué te dedicas?";
+      subtitle = "Elige tu ocupación actual.";
+    } else if (field.key === "visaAnterior") {
+      label = "¿Tienes o has tenido visa antes?";
+      subtitle = "Selecciona la opción que mejor describa tu situación.";
+    } else if (field.key === "viajes") {
+      label = "¿Has viajado a alguno de estos destinos en los últimos 5 años?";
+      subtitle = "Ten en cuenta tus viajes personales.";
+    } else if (field.key === "lazos") {
+      label = "¿Tienes familiares directos en el país de destino?";
+      options = [
+        { value: studyOptions.lazos[0], label: "Sí, ciudadanos o residentes" },
+        { value: studyOptions.lazos[1], label: "No tengo familia allá" },
+      ];
+    }
+  } else if (answers.grupo) {
+    if (field.key === "solicitud") {
+      label = "¿La solicitud principal es por primera vez o renovación?";
+      subtitle = "Responde por el solicitante principal.";
+    } else if (field.key === "cumplimiento") {
+      label = "¿Cuál es el historial de cumplimiento migratorio del solicitante principal?";
+      subtitle = "Responde por el solicitante principal.";
+    }
+  }
+
+  return { key: field.key, label, subtitle, options };
+}
+
+export function updateStudyAnswer(current: StudyAnswers, key: StudyQuestionKey, value: string): StudyAnswers {
+  if (!(studyOptions[key] as readonly string[]).includes(value)) throw new Error("Respuesta de estudio inválida.");
+  const next = { ...current, [key]: value };
+  if (key === "grupo" && value !== current.grupo) {
+    next.solicitud = undefined;
+    next.pasaportes = undefined;
+    next.ocupacion = undefined;
+    next.visaAnterior = undefined;
+    next.viajes = undefined;
+    next.cumplimiento = undefined;
+    next.lazos = undefined;
+  }
+  if (key === "destino" && value !== current.destino) next.lazos = undefined;
+  return next;
+}
+
 export function classifyStudy(answers: StudyAnswers): StudyOutcome {
   for (const [key, choices] of Object.entries(studyOptions)) {
     if (!(choices as readonly string[]).includes(answers[key as keyof typeof studyOptions] ?? ""))
