@@ -25,7 +25,8 @@ La demo usa sessionStorage: conserva acciones, mensajes e historial al recargar 
 - Las versiones de lead y el bloqueo de guardado evitan confirmar dos veces el mismo envío.
 - `data/mensajes.json` contiene 32 mensajes entregados por el usuario: 24 para SIN ESTUDIO (Canadá, Australia, Estados Unidos y Reino Unido) y 8 entradas para ESTUDIO A/B/C. Ninguno usa variables de nombre, para que pueda copiarse como difusión. Cambiar un mensaje no modifica envíos históricos ni fechas previamente programadas.
 - Los mensajes usan el día absoluto de su secuencia. Después de confirmar un envío, la próxima fecha se calcula con la diferencia entre el día del mensaje actual y el siguiente aplicable al segmento.
-- SIN ESTUDIO representa registros que todavía no hicieron el estudio. ESTUDIO A es perfil Alto, ESTUDIO B es Medio-Alto y ESTUDIO C es Medio. `TIPO_ESTUDIO` se guarda por separado (`NINGUNO`, `GRATUITO`, `PAGO`) para no confundir la calificación con la modalidad del estudio.
+- SIN ESTUDIO representa registros que todavía no hicieron el estudio. ESTUDIO A es perfil Alto, ESTUDIO B es Medio-Alto, ESTUDIO C es Medio y ESTUDIO D es Bajo. D pasa a NO APTO y no tiene secuencia ni seguimiento comercial. `TIPO_ESTUDIO` se guarda por separado (`NINGUNO`, `GRATUITO`, `PAGO`) para no confundir la calificación con la modalidad del estudio.
+- La función de dominio `applyStudyClassification` conserva la primera clasificación A/B/C/D, ignora reintentos del mismo evento y registra otros estudios como repetidos sin cambiar el perfil. Para A/B/C pausa la secuencia y deja revisión manual hasta implementar la continuidad por hitos. Todavía no recibe eventos reales.
 - Los mensajes con marcadores, recursos faltantes o enlaces posiblemente cruzados tienen `REQUIERE_REVISION=true`. HOY bloquea Copiar, WhatsApp y Confirmar envío para esos mensajes hasta que se desmarque la revisión en MENSAJES.
 
 ## Capas y conexión futura a Baserow
@@ -46,17 +47,17 @@ Para Baserow, sustituir la creación del repositorio en el proveedor por un adap
 
 Antes de habilitar datos reales: definir permisos/autenticación, paginación, validación de respuestas y estrategia de concurrencia/idempotencia para la escritura coordinada de lead + interacción. El adaptador Baserow no está implementado; no se asume atomicidad entre tablas. ASESOR es opcional y no depende de Augusto/Diana.
 
-## Transición futura de SIN ESTUDIO a ESTUDIO A/B/C
+## Transición futura de SIN ESTUDIO a ESTUDIO A/B/C/D
 
-Esta transición se implementará cuando existan el estudio en línea, Baserow y la integración con ActiveCampaign. ActiveCampaign deberá informar que la respuesta del estudio fue enviada e incluir una referencia inequívoca al lead y su clasificación A, B o C. Baserow será la fuente de verdad del estado operativo del CRM.
+La primera versión del estudio en línea ya existe en ActiveCampaign, pero todavía no está conectada a esta V2. El adaptador deberá recibir una referencia inequívoca al lead y su clasificación A, B, C o D. Baserow será la fuente de verdad del estado operativo del CRM. D termina el seguimiento sin mensajes automáticos.
 
-El cambio de segmento no debe reiniciar la comunicación. El CRM conservará el último mensaje de WhatsApp realmente confirmado como enviado y su `HITO_WHATSAPP`. Al recibir el evento del estudio, pausará SIN ESTUDIO, registrará una interacción `RESPUESTA_ESTUDIO_ENVIADA`, asignará ESTUDIO A/B/C y omitirá la bienvenida de ESTUDIO. Si ActiveCampaign todavía no envió el resultado específico por WhatsApp, el CRM comenzará en el mensaje 2, que informa si el perfil es Alto/Medio-Alto o Medio. Si ese resultado ya fue enviado, comenzará en el mensaje 3. Desde allí elegirá el primer hito que el lead todavía no haya recorrido y calculará la próxima fecha desde el último envío real.
+El cambio de segmento no debe reiniciar la comunicación. El CRM conservará el último mensaje de WhatsApp realmente confirmado como enviado y su `HITO_WHATSAPP`. Al recibir el evento del estudio, pausará SIN ESTUDIO, registrará la primera clasificación y omitirá la bienvenida de ESTUDIO. Las automatizaciones revisadas de ActiveCampaign envían el resultado por correo; no se ha verificado un envío de resultado por WhatsApp. Por ello, A/B/C comenzará en el mensaje 2 según lo recorrido en WhatsApp. El mensaje 3 solo corresponderá cuando se confirme que el mensaje de perfil ya se envió por WhatsApp. Desde allí elegirá el primer hito que el lead todavía no haya recorrido y calculará la próxima fecha desde el último envío real.
 
 No se debe inferir el avance solo por días desde el registro, por mensajes abiertos en WhatsApp ni por mensajes copiados. Solamente cuentan las confirmaciones de envío almacenadas en INTERACCIONES. El evento externo debe usar `ID_EVENTO_EXTERNO` para que un reintento de ActiveCampaign no cambie dos veces el segmento ni cree interacciones duplicadas.
 
-La primera respuesta válida del estudio fija de manera permanente la clasificación A/B/C mediante `PRIMER_ESTUDIO_ID` y `FECHA_PRIMER_ESTUDIO`. Si el contacto completa el estudio nuevamente, el evento se registra para auditoría como repetido, pero no cambia `PERFIL_ESTUDIO`, no reinicia la secuencia y no vuelve a enviar el mensaje de resultado.
+La primera respuesta válida del estudio fija de manera permanente la clasificación A/B/C/D mediante `PRIMER_ESTUDIO_ID` y `FECHA_PRIMER_ESTUDIO`. Si el contacto completa el estudio nuevamente, el evento se registra para auditoría como repetido, pero no cambia `PERFIL_ESTUDIO`, no reinicia la secuencia y no vuelve a enviar el mensaje de resultado. La configuración “Una vez” observada es por automatización; el bloqueo global debe vivir en el CRM/Baserow.
 
-Antes de implementar esta regla falta definir la correspondencia exacta de los hitos posteriores al mensaje de perfil, el identificador compartido entre ActiveCampaign y Baserow, cómo confirma ActiveCampaign si el resultado se envió también por WhatsApp y qué ocurre si el evento llega mientras existe una respuesta o seguimiento manual pendiente.
+Antes de automatizar la transición falta definir la correspondencia exacta de los hitos posteriores al mensaje de perfil, el identificador compartido entre ActiveCampaign y Baserow y qué ocurre si el evento llega mientras existe una respuesta o seguimiento manual pendiente. Ver `docs/ACTIVE-CAMPAIGN-ESTUDIO.md`.
 
 ## Vercel
 

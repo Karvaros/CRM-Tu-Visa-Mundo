@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { applyCommand, priority, renderMessage } from "../lib/crm";
+import { applyCommand, applyStudyClassification, priority, renderMessage } from "../lib/crm";
 import { addDays, today, validDate } from "../lib/dates";
 import { createMockData } from "../lib/mock-data";
 import { createMockRepository } from "../lib/mock-repository";
@@ -231,4 +231,42 @@ test("mensajes pendientes o personalizados no pueden aprobarse ni enviarse", asy
     () => repo.saveMessage({ ...placeholder, requiereRevision: false }),
     /marcador/,
   );
+});
+
+test("el primer estudio fija el perfil y un estudio posterior no altera la secuencia", () => {
+  const data = seed();
+  const first = applyStudyClassification(data, {
+    leadId: "lead-001", estudioId: "estudio-1", eventoExternoId: "ac-1", perfil: "B",
+  }, now, "interaccion-1");
+  assert.equal(first.leads[0].perfilEstudio, "B");
+  assert.equal(first.leads[0].primerEstudioId, "estudio-1");
+  assert.equal(first.leads[0].segmento, "ESTUDIO_B");
+  assert.equal(first.leads[0].secuenciaPausada, true);
+  assert.equal(first.leads[0].proximoMensajeId, undefined);
+  assert.equal(priority(first.leads[0], "2026-09-14"), "MANUAL");
+  assert.deepEqual(applyStudyClassification(first, {
+    leadId: "lead-001", estudioId: "estudio-1", eventoExternoId: "ac-1", perfil: "B",
+  }, now, "interaccion-2"), first);
+  const repeated = applyStudyClassification(first, {
+    leadId: "lead-001", estudioId: "estudio-2", eventoExternoId: "ac-2", perfil: "A",
+  }, now, "interaccion-3");
+  assert.deepEqual(repeated.leads[0], first.leads[0]);
+  assert.equal(repeated.interacciones[0].tipo, "ESTUDIO_REPETIDO");
+  assert.equal(data.leads[0].perfilEstudio, undefined);
+});
+
+test("perfil D cierra el lead sin mensaje ni seguimiento, incluso si ya tenía secuencia", () => {
+  const data = seed();
+  const classified = applyStudyClassification(data, {
+    leadId: "lead-002", estudioId: "estudio-bajo", eventoExternoId: "ac-bajo", perfil: "D",
+  }, now, "interaccion-bajo");
+  const lead = classified.leads[1];
+  assert.equal(lead.estado, "NO_APTO");
+  assert.equal(lead.segmento, "ESTUDIO_D");
+  assert.equal(lead.secuenciaId, "");
+  assert.equal(lead.proximoMensajeId, undefined);
+  assert.equal(lead.proximoContacto, undefined);
+  assert.equal(priority(lead, "2026-09-14"), null);
+  assert.equal(lead.ultimoMensajeId, data.leads[1].ultimoMensajeId);
+  assert.equal(classified.mensajes.some((message) => message.segmento.includes("ESTUDIO_D")), false);
 });

@@ -17,10 +17,11 @@ export const messageSegments = [
   "ESTUDIO_A",
   "ESTUDIO_B",
   "ESTUDIO_C",
+  "ESTUDIO_D",
 ] as const;
 export type MessageSegment = (typeof messageSegments)[number];
 export type StudyType = "NINGUNO" | "GRATUITO" | "PAGO";
-export type StudyProfile = "A" | "B" | "C";
+export type StudyProfile = "A" | "B" | "C" | "D";
 export type ResourceType =
   "TEXTO" | "WEB" | "YOUTUBE" | "REEL" | "IMAGEN" | "ARTICULO";
 export interface Lead {
@@ -36,6 +37,8 @@ export interface Lead {
   segmento: MessageSegment;
   tipoEstudio: StudyType;
   perfilEstudio?: StudyProfile;
+  primerEstudioId?: string;
+  fechaPrimerEstudio?: string;
   secuenciaId: string;
   fechaIngreso: string;
   estado: LeadStatus;
@@ -68,12 +71,25 @@ export interface Message {
 export interface Interaction {
   id: string;
   leadId: string;
-  tipo: "ENVIADO" | "RESPONDIO" | "REPROGRAMADO" | "ESTADO";
+  tipo:
+    | "ENVIADO"
+    | "RESPONDIO"
+    | "REPROGRAMADO"
+    | "ESTADO"
+    | "ESTUDIO_CLASIFICADO"
+    | "ESTUDIO_REPETIDO";
   fecha: string;
   detalle: string;
   mensajeId?: string;
   mensajeTexto?: string;
   asesor?: string;
+  eventoExternoId?: string;
+}
+export interface StudyClassification {
+  leadId: string;
+  estudioId: string;
+  eventoExternoId: string;
+  perfil: StudyProfile;
 }
 export interface CrmData {
   leads: Lead[];

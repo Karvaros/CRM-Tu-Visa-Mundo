@@ -6,6 +6,7 @@ import {
   type LeadCommand,
   type LeadPriority,
   type Message,
+  type StudyClassification,
 } from "./types";
 
 export const isClosed = (lead: Lead) =>
@@ -134,6 +135,59 @@ export function applyCommand(
     ...(command.type === "sent"
       ? { mensajeId: message!.id, mensajeTexto: command.mensajeTexto }
       : {}),
+  });
+  return result;
+}
+
+/** Conserva la primera clasificación, incluso si ActiveCampaign dispara otra ruta. */
+export function applyStudyClassification(
+  data: CrmData,
+  event: StudyClassification,
+  now: Date,
+  interactionId: string,
+): CrmData {
+  if (!event.estudioId.trim() || !event.eventoExternoId.trim())
+    throw new Error("El estudio y el evento externo deben tener identificador.");
+  if (!["A", "B", "C", "D"].includes(event.perfil))
+    throw new Error("Clasificación de estudio inválida.");
+  if (data.interacciones.some((item) => item.eventoExternoId === event.eventoExternoId))
+    return data;
+
+  const result = structuredClone(data);
+  const lead = result.leads.find((item) => item.id === event.leadId);
+  if (!lead) throw new Error("El lead no existe.");
+  const repeated = Boolean(lead.primerEstudioId || lead.perfilEstudio);
+  if (!repeated) {
+    lead.primerEstudioId = event.estudioId;
+    lead.fechaPrimerEstudio = now.toISOString();
+    lead.tipoEstudio = "GRATUITO";
+    lead.perfilEstudio = event.perfil;
+    lead.segmento = `ESTUDIO_${event.perfil}`;
+    lead.secuenciaPausada = true;
+    lead.proximoMensajeId = undefined;
+    if (event.perfil === "D") {
+      lead.estado = "NO_APTO";
+      lead.secuenciaId = "";
+      lead.proximoContacto = undefined;
+      lead.seguimientoManual = false;
+      lead.proximaAccion = "Perfil D: sin seguimiento comercial";
+    } else {
+      // La continuidad por hitos se activará cuando exista el adaptador real.
+      lead.proximoContacto = today(now);
+      lead.seguimientoManual = true;
+      lead.proximaAccion = "Revisar estudio y continuar desde el último WhatsApp enviado";
+    }
+    lead.version++;
+  }
+  result.interacciones.unshift({
+    id: interactionId,
+    leadId: lead.id,
+    tipo: repeated ? "ESTUDIO_REPETIDO" : "ESTUDIO_CLASIFICADO",
+    fecha: now.toISOString(),
+    detalle: repeated
+      ? `Estudio repetido ${event.estudioId}; se conserva el primer perfil ${lead.perfilEstudio}`
+      : `Primer estudio ${event.estudioId}: perfil ${event.perfil}`,
+    eventoExternoId: event.eventoExternoId,
   });
   return result;
 }
