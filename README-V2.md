@@ -43,6 +43,8 @@ El formulario definitivo enviará las respuestas primero al servidor de Next.js,
 
 Para Baserow, sustituir la creación del repositorio en el proveedor por un adaptador HTTP que llame a Route Handlers autenticados de Next.js. Reutilizar reglas y tipos. El servidor mapeará IDs/columnas Baserow; el token solo debe existir en variables de entorno del servidor, nunca NEXT_PUBLIC ni en el navegador. No almacenar datos de producción en memoria del proceso de Vercel.
 
+La base independiente `CRM Tu Visa Mundo V2` ya existe en Baserow con las tres tablas vacías y campos principales. IDs, tipos y pendientes de conexión: `docs/BASEROW-V2.md`. La demo aún no lee ni escribe en ella.
+
 | Tabla | Campos previstos |
 | --- | --- |
 | LEADS | ID, VERSION, NOMBRE, APELLIDO, WHATSAPP, EMAIL, DESTINO, TIPO_VISA, ORIGEN, SEGMENTO, TIPO_ESTUDIO, PERFIL_ESTUDIO, PRIMER_ESTUDIO_ID, FECHA_PRIMER_ESTUDIO, SECUENCIA_ID, ULTIMO_HITO_WHATSAPP, FECHA_INGRESO, ESTADO, ULTIMO_CONTACTO, ULTIMO_MENSAJE (relación), PROXIMO_CONTACTO, PROXIMA_ACCION, PROXIMO_MENSAJE (relación), SEGUIMIENTO_MANUAL, SECUENCIA_PAUSADA, ASESOR, NOTAS |
