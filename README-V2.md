@@ -16,6 +16,8 @@ La demo usa sessionStorage: conserva acciones, mensajes e historial al recargar 
 
 `/estudio` es la vista de prueba del nuevo estudio gratuito: una pregunta por página (nueve preguntas y una página final de contacto), preguntas del formulario actual más destino para visa de turismo, clasificación local y correo/teléfono obligatorios. No guarda respuestas ni envía correos o eventos al CRM; no usar para captar leads hasta completar Baserow y ActiveCampaign. Ver `docs/ACTIVE-CAMPAIGN-ESTUDIO.md`.
 
+El formulario definitivo enviará las respuestas primero al servidor de Next.js, que bloqueará clasificaciones repetidas en Baserow y después activará la ruta de correo correspondiente en ActiveCampaign. La página pública actual de WordPress seguirá siendo la entrada; se cambiará su formulario por un enlace al asistente solo después de verificar esa conexión con contactos de ensayo. El procedimiento y las automatizaciones identificadas están en `docs/ACTIVE-CAMPAIGN-ESTUDIO.md`.
+
 ## Reglas implementadas
 
 - Las prioridades son derivadas de fecha, estado y modalidad, no un campo persistido.
