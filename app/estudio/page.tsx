@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useState } from "react";
 import { classifyStudy, presentStudyQuestion, studyPages, updateStudyAnswer, type StudyAnswers, type StudyOutcome } from "@/lib/study";
 import "./study.css";
@@ -32,8 +33,7 @@ export default function StudyPage() {
     <main className="study-screen">
       <div className="study-frame">
         <header className="study-brand" aria-label="Tu Visa Mundo">
-          <span className="study-brand__globe" aria-hidden="true">✦</span>
-          <span><strong>tuvisa</strong><b>MUNDO</b></span>
+          <Image src="/logo-tu-visa-mundo.png" alt="Tu Visa Mundo" width={200} height={100} priority />
         </header>
         <div className="study-card">
           {!outcome ? (

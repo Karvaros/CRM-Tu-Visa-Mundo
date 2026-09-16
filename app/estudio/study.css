@@ -1,9 +1,7 @@
 .study-screen { min-height: 100svh; padding: 28px 18px 22px; background: radial-gradient(circle at 50% 0%, #e3effb 0, #f5f9fd 42%, #eef4fa 100%); color: #19385a; }
 .study-frame { width: min(760px, 100%); margin: 0 auto; }
-.study-brand { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 8px 0 24px; color: #315b8d; letter-spacing: -.04em; line-height: .9; }
-.study-brand__globe { display: grid; place-items: center; width: 44px; height: 44px; border: 2px solid #6b9cca; border-radius: 50%; color: #6b9cca; font-size: 23px; }
-.study-brand strong, .study-brand b { display: block; font-size: 25px; }
-.study-brand b { background: #315b8d; color: white; letter-spacing: .12em; padding: 3px 5px; font-size: 13px; margin-top: 3px; }
+.study-brand { display: flex; align-items: center; justify-content: center; margin: 0 0 16px; }
+.study-brand img { display: block; width: 180px; height: 90px; object-fit: contain; }
 .study-card { background: white; border: 1px solid #d9e7f4; border-radius: 24px; box-shadow: 0 24px 72px #315b8d16; padding: clamp(24px, 5vw, 48px); }
 .study-progress__top { display: flex; justify-content: space-between; gap: 12px; color: #66819e; font-size: 11px; font-weight: 800; letter-spacing: .09em; }
 .study-progress { height: 7px; background: #eaf1f8; border-radius: 999px; margin: 15px 0 34px; overflow: hidden; }
