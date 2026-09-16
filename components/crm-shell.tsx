@@ -12,6 +12,7 @@ const links = [
 ];
 export function CrmShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  if (pathname === "/estudio") return <>{children}</>;
   return (
     <div className="shell">
       <aside className="sidebar">

@@ -14,6 +14,8 @@ Se conserva el diseño original de HOY y sus cuatro leads. HOY es funcional con 
 
 La demo usa sessionStorage: conserva acciones, mensajes e historial al recargar la misma pestaña. No comparte datos entre asesores/dispositivos. No usar datos reales. No hay credenciales, envíos automáticos, autenticación ni conexiones externas implementadas.
 
+`/estudio` es la vista de prueba del nuevo estudio gratuito: cinco pasos a pantalla completa, preguntas del formulario actual más destino, clasificación local y correo/teléfono obligatorios. No guarda respuestas ni envía correos o eventos al CRM; no usar para captar leads hasta completar Baserow y ActiveCampaign. Ver `docs/ACTIVE-CAMPAIGN-ESTUDIO.md`.
+
 ## Reglas implementadas
 
 - Las prioridades son derivadas de fecha, estado y modalidad, no un campo persistido.
