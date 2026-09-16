@@ -18,7 +18,7 @@ Pendiente para conectar: identificador estable del contacto entre formularios, A
 
 ## Nuevo estudio por páginas (V2)
 
-La ruta `/estudio` usa una pantalla independiente del menú del CRM. Reproduce las preguntas del formulario 7 en cuatro páginas de respuestas y una página final de nombre, correo y teléfono obligatorios. Agrega destino porque el formulario 7 no lo pregunta y el CRM lo necesita. Por ahora es una vista de prueba: clasifica en el navegador, no guarda datos, no envía correos ni crea leads.
+La ruta `/estudio` usa una pantalla independiente del menú del CRM. Presenta una sola pregunta por página: nueve preguntas y una página final de nombre, correo y teléfono obligatorios. Reproduce las preguntas del formulario 7 y agrega destino, formulado explícitamente para visa de turismo, porque el formulario 7 no lo pregunta y el CRM lo necesita. Por ahora es una vista de prueba: clasifica en el navegador, no guarda datos, no envía correos ni crea leads.
 
 Reglas reconstruidas de las automatizaciones activas: Bajo/D si el solicitante es desempleado/informal en primera vez, hay irregularidad/deportación, hubo permanencia superior al tiempo permitido o nadie tiene pasaporte vigente. Para los demás, renovación corresponde a Alto/A; primera vez con viajes a EE. UU./Canadá/Europa/Australia/Asia y visa previa de EE. UU./Canadá/Australia corresponde a Alto/A; los mismos viajes con ninguna visa o una visa de otros destinos corresponden a Medio-Alto/B; primera vez sin visa previa ni esos viajes corresponde a Medio/C. En el nuevo cálculo D tiene prioridad sobre las otras rutas para evitar resultados simultáneos. La ruta de renovación actual de ActiveCampaign no aplica esta prioridad global por sí sola.
 

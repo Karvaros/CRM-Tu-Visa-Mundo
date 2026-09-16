@@ -46,15 +46,15 @@ export default function StudyPage() {
               </div>
               <form onSubmit={next}>
                 <div className="study-intro">
-                  <span className="study-kicker">{page === 0 ? "Empecemos" : `Paso ${page + 1}`}</span>
-                  <h1>{questionPage?.title ?? "¿Dónde te enviamos el resultado?"}</h1>
+                  <span className="study-kicker">{questionPage?.title ?? "Tus datos"}</span>
+                  <h1>{questionPage?.fields[0].label ?? "¿Dónde te enviamos el resultado?"}</h1>
                   <p>{questionPage?.subtitle ?? "Déjanos tus datos para identificar tu estudio. En esta vista de prueba no se guardan ni envían respuestas."}</p>
                 </div>
                 {questionPage ? (
                   <div className="study-questions">
                     {questionPage.fields.map((field) => (
                       <fieldset className="study-question" key={field.key}>
-                        <legend>{field.label}<span aria-hidden="true"> *</span></legend>
+                        <legend className="study-visually-hidden">{field.label} (obligatorio)</legend>
                         <div className="study-options">
                           {studyOptions[field.key].map((option) => (
                             <label className={`study-option ${answers[field.key] === option ? "study-option--selected" : ""}`} key={option}>

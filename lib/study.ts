@@ -61,37 +61,49 @@ function pending(motivo: string): StudyOutcome {
 
 export const studyPages = [
   {
-    title: "Tu viaje",
-    subtitle: "Comencemos con tu destino y quiénes viajarán.",
-    fields: [
-      { key: "destino", label: "¿Para qué destino deseas tramitar la visa?" },
-      { key: "grupo", label: "¿Quiénes aplicarán a la visa?" },
-      { key: "solicitud", label: "Estado de la solicitud" },
-    ],
+    title: "Tu destino",
+    subtitle: "Elige el país que te interesa visitar.",
+    fields: [{ key: "destino", label: "¿Para qué destino deseas tramitar la visa de turismo?" }],
   },
   {
-    title: "Documentos y ocupación",
-    subtitle: "Responde por el solicitante principal si viajas en grupo.",
-    fields: [
-      { key: "pasaportes", label: "¿Cómo está el estatus de los pasaportes del grupo?" },
-      { key: "ocupacion", label: "¿A qué se dedica el principal responsable económico del viaje?" },
-    ],
+    title: "Tu grupo",
+    subtitle: "Si viajas con más personas, luego responde por el solicitante principal.",
+    fields: [{ key: "grupo", label: "¿Quiénes aplicarán a la visa?" }],
   },
   {
-    title: "Tu experiencia de viaje",
-    subtitle: "Estas respuestas ayudan a orientar el resultado inicial.",
-    fields: [
-      { key: "visaAnterior", label: "¿Tiene o ha tenido visa antes?" },
-      { key: "viajes", label: "¿El solicitante principal ha viajado a alguno de estos destinos en los últimos 5 años?" },
-    ],
+    title: "Tu solicitud",
+    subtitle: "Cuéntanos si es tu primera solicitud o una renovación.",
+    fields: [{ key: "solicitud", label: "¿Es tu primera solicitud o una renovación?" }],
   },
   {
-    title: "Antecedentes y vínculos",
+    title: "Pasaportes",
+    subtitle: "Considera a todas las personas que viajarán.",
+    fields: [{ key: "pasaportes", label: "¿Cómo está el estatus de los pasaportes del grupo?" }],
+  },
+  {
+    title: "Ocupación",
+    subtitle: "Responde por el principal responsable económico del viaje.",
+    fields: [{ key: "ocupacion", label: "¿A qué se dedica el principal responsable económico del viaje?" }],
+  },
+  {
+    title: "Visas anteriores",
+    subtitle: "Responde por el solicitante principal.",
+    fields: [{ key: "visaAnterior", label: "¿Tiene o ha tenido visa antes?" }],
+  },
+  {
+    title: "Viajes anteriores",
+    subtitle: "Responde por el solicitante principal.",
+    fields: [{ key: "viajes", label: "¿El solicitante principal ha viajado a alguno de estos destinos en los últimos 5 años?" }],
+  },
+  {
+    title: "Cumplimiento",
     subtitle: "Selecciona la opción que mejor describa tu situación.",
-    fields: [
-      { key: "cumplimiento", label: "Historial de cumplimiento" },
-      { key: "lazos", label: "¿Tienen familiares directos en el país de destino?" },
-    ],
+    fields: [{ key: "cumplimiento", label: "¿Cuál es tu historial de cumplimiento migratorio?" }],
+  },
+  {
+    title: "Familia en destino",
+    subtitle: "Una última pregunta antes de tus datos de contacto.",
+    fields: [{ key: "lazos", label: "¿Tienen familiares directos en el país de destino?" }],
   },
 ] as const;
 
