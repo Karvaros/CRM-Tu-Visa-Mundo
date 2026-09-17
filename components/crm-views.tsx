@@ -29,6 +29,17 @@ const sections: { key: LeadPriority; title: string; description: string }[] = [
     description: "Acciones manuales de hoy o pendientes de días anteriores.",
   },
 ];
+const mainDestinations = ["Canadá", "Estados Unidos", "Australia", "Reino Unido"];
+
+function destinationName(value: string) {
+  const normalized = value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z]/g, "");
+  if (normalized === "canada") return "Canadá";
+  if (["eeuu", "eua", "usa", "estadosunidos"].includes(normalized)) return "Estados Unidos";
+  if (normalized === "australia") return "Australia";
+  if (["uk", "reinounido"].includes(normalized)) return "Reino Unido";
+  return value.trim();
+}
+
 const titles: Record<string, string> = {
   hoy: "Hoy",
   leads: "Leads",
@@ -41,18 +52,30 @@ export function CrmView({ view }: { view: string }) {
   const { data, date, busy, reset } = useCrm();
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("");
+  const [destination, setDestination] = useState("");
+  const [agendaFilter, setAgendaFilter] = useState("");
   const [messageSequence, setMessageSequence] = useState("");
   const [reviewOnly, setReviewOnly] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
   if (!data) return <p role="status">Cargando demostración…</p>;
+  const destinations = [
+    ...mainDestinations,
+    ...[...new Set(data.leads.map((lead) => destinationName(lead.destino)))].filter(
+      (name) => name && !mainDestinations.includes(name),
+    ).sort((a, b) => a.localeCompare(b, "es")),
+  ];
   const leads = data.leads.filter(
     (lead) =>
       `${lead.nombre} ${lead.apellido} ${lead.destino} ${lead.whatsapp}`
         .toLocaleLowerCase("es")
         .includes(search.toLocaleLowerCase("es")) &&
-      (!filter || lead.estado === filter),
+      (!destination || destinationName(lead.destino) === destination) &&
+      (view !== "leads" || !filter || lead.estado === filter),
   );
-  const due = data.leads.filter((lead) => priority(lead, date));
+  const due = leads.filter((lead) => {
+    const kind = priority(lead, date);
+    return kind && (!agendaFilter || (agendaFilter === "SEGUIMIENTOS" ? kind !== "NUEVO" : kind === "NUEVO"));
+  });
   return (
     <>
       <header className="page-header">
@@ -81,12 +104,11 @@ export function CrmView({ view }: { view: string }) {
             ],
             [
               "Vencidos",
-              due.filter((lead) => lead.proximoContacto! < date).length,
+              due.filter((lead) => priority(lead, date) === "ATRASADO").length,
             ],
             [
-              "Conversaciones activas",
-              data.leads.filter((lead) => lead.estado === "EN_CONVERSACION")
-                .length,
+              "Manuales",
+              due.filter((lead) => priority(lead, date) === "MANUAL").length,
             ],
           ].map(([label, count]) => (
             <div className="metric" key={label}>
@@ -108,36 +130,53 @@ export function CrmView({ view }: { view: string }) {
             />
           </label>
           <label>
-            Estado
-            <select
-              value={filter}
-              onChange={(event) => setFilter(event.target.value)}
-            >
-              <option value="">Todos los estados</option>
-              {leadStatuses.map((status) => (
-                <option key={status} value={status}>
-                  {status
-                    .replaceAll("_", " ")
-                    .replace("CONVERSACION", "CONVERSACIÓN")}
-                </option>
-              ))}
+            País de destino
+            <select value={destination} onChange={(event) => setDestination(event.target.value)}>
+              <option value="">Todos los países</option>
+              {destinations.map((name) => <option key={name} value={name}>{name}</option>)}
             </select>
           </label>
+          {view === "hoy" ? (
+            <label>
+              Tipo de pendiente
+              <select value={agendaFilter} onChange={(event) => setAgendaFilter(event.target.value)}>
+                <option value="">Todos los pendientes</option>
+                <option value="NUEVO">Nuevos</option>
+                <option value="SEGUIMIENTOS">Todos los seguimientos</option>
+              </select>
+            </label>
+          ) : (
+            <label>
+              Estado
+              <select value={filter} onChange={(event) => setFilter(event.target.value)}>
+                <option value="">Todos los estados</option>
+                {leadStatuses.map((status) => (
+                  <option key={status} value={status}>
+                    {status.replaceAll("_", " ").replace("CONVERSACION", "CONVERSACIÓN")}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
         </div>
       )}
       {view === "hoy" && (
         <>
           {due.length === 0 && (
             <div className="empty-state">
-              <h2>Estás al día</h2>
+              <h2>{search || destination || agendaFilter ? "Sin pendientes para esta selección" : "Estás al día"}</h2>
               <p>
-                No hay contactos pendientes. Puedes consultar todos los leads en
-                LEADS.
+                {search || destination || agendaFilter
+                  ? "Prueba otro país o tipo de pendiente."
+                  : "No hay contactos pendientes. Puedes consultar todos los leads en LEADS."}
               </p>
             </div>
           )}
-          {sections.map((section) => {
-            const items = leads
+          {sections.filter((section) =>
+            (!agendaFilter || (agendaFilter === "SEGUIMIENTOS" ? section.key !== "NUEVO" : section.key === "NUEVO")) &&
+            (!(search || destination || agendaFilter) || due.some((lead) => priority(lead, date) === section.key)),
+          ).map((section) => {
+            const items = due
               .filter((lead) => priority(lead, date) === section.key)
               .sort((a, b) =>
                 (a.proximoContacto ?? "").localeCompare(
@@ -160,7 +199,7 @@ export function CrmView({ view }: { view: string }) {
                   {!items.length && (
                     <p className="empty-state">
                       Sin pendientes
-                      {search || filter ? " para estos filtros" : ""}.
+                      {search || destination || agendaFilter ? " para esta selección" : ""}.
                     </p>
                   )}
                 </div>
@@ -445,3 +484,4 @@ function MessageEditor({ message }: { message: Message }) {
     </form>
   );
 }
+
