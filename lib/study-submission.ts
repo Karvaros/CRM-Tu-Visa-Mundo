@@ -37,7 +37,7 @@ function leadFields(claim: StudyClaim) {
     TIPO_ESTUDIO: "GRATUITO",
     ...(isPending ? {} : { PERFIL_ESTUDIO: claim.perfil, SEGMENTO: `ESTUDIO_${claim.perfil}` }),
     PRIMER_ESTUDIO_ID: claim.id,
-    FECHA_PRIMER_ESTUDIO: claim.createdAt.slice(0, 10),
+    FECHA_PRIMER_ESTUDIO: claim.createdAt,
     SECUENCIA_PAUSADA: true,
     ESTADO: isLow ? "NO_APTO" : "ESTUDIO_GRATUITO",
     SEGUIMIENTO_MANUAL: !isLow,
@@ -98,7 +98,7 @@ export function createStudySubmission(options: { store: Store; campaign: Campaig
       ? await store.updateLead(originalLead.id, baseFields)
       : await store.createLead({
         NOMBRE: claim.answers.nombre, EMAIL: email, WHATSAPP: claim.answers.telefono,
-        ORIGEN: "ESTUDIO_V2", FECHA_INGRESO: claim.createdAt.slice(0, 10), VERSION: 1,
+        ORIGEN: "ESTUDIO_V2", FECHA_INGRESO: claim.createdAt, VERSION: 1,
         ...baseFields,
       });
     await store.linkClaim(claim, lead.id);

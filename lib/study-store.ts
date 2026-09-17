@@ -65,7 +65,7 @@ export function createStudyStore(options: { token: string; ids: StudyTableIds; f
         const row = await request<LeadRow>(ids.interacciones, "POST", "?user_field_names=true", {
           TIPO: "ESTUDIO_CLASIFICADO", DETALLE: `Primer Estudio de Perfil: ${claim.perfil}`,
           ID_EVENTO_EXTERNO: studyKey(claim.email), ORIGEN_SISTEMA: "ESTUDIO_V2",
-          FECHA: claim.createdAt.slice(0, 10), RESPUESTAS_ESTUDIO: JSON.stringify(claim),
+          FECHA: claim.createdAt, RESPUESTAS_ESTUDIO: JSON.stringify(claim),
         });
         return { claim: { ...claim, rowId: row.id }, created: true };
       } catch (error) {

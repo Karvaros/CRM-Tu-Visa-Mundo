@@ -73,9 +73,12 @@ test("guarda la primera clasificación y dispara solo su automatización de Acti
   const first = await submit(answers);
   assert.deepEqual(first, { perfil: "A", status: "SENT" });
   assert.equal(leads[0].PERFIL_ESTUDIO, "A");
+  assert.equal(leads[0].FECHA_PRIMER_ESTUDIO, "2026-09-17T12:00:00.000Z");
+  assert.equal(leads[0].FECHA_INGRESO, "2026-09-17T12:00:00.000Z");
   assert.equal(leads[0].SECUENCIA_PAUSADA, true);
   assert.equal(leads[0].PROXIMA_ACCION, "Revisar estudio y continuar desde el último WhatsApp enviado");
   assert.equal(interactions[0].ID_EVENTO_EXTERNO, "ESTUDIO_V2_PRIMERO:ana@example.com");
+  assert.equal(interactions[0].FECHA, "2026-09-17T12:00:00.000Z");
   assert.deepEqual(startedAutomations, [301]);
   const contact = (syncPayload as { contact: { fieldValues: Array<{ field: string; value: string }> } } | null)?.contact;
   assert.equal(contact?.fieldValues.find((item) => item.field === String(fields.solicitud))?.value, "Renovación");
