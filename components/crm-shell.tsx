@@ -1,4 +1,5 @@
 "use client";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
@@ -17,11 +18,10 @@ export function CrmShell({ children }: { children: ReactNode }) {
     <div className="shell">
       <aside className="sidebar">
         <div className="brand">
-          <div className="brand-mark">TVM</div>
-          <div>
-            <strong>Tu Visa Mundo</strong>
-            <span>CRM V2</span>
+          <div className="brand-logo">
+            <Image src="/logo-tu-visa-mundo.png" alt="Tu Visa Mundo" width={200} height={100} priority />
           </div>
+          <span>CRM V2</span>
         </div>
         <nav aria-label="Navegación principal">
           {links.map(([href, label]) => (

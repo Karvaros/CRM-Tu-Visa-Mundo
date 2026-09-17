@@ -5,10 +5,10 @@ a { color: inherit; text-decoration: none; }
 button, a { font: inherit; }
 .shell { min-height: 100vh; display: grid; grid-template-columns: 250px minmax(0, 1fr); }
 .sidebar { position: sticky; top: 0; height: 100vh; padding: 28px 20px; background: #0f2742; color: #fff; display: flex; flex-direction: column; gap: 34px; }
-.brand { display: flex; gap: 12px; align-items: center; }
-.brand-mark { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; font-weight: 900; background: #eef5ff; color: #0f2742; }
-.brand strong, .brand span { display: block; }
-.brand span { margin-top: 2px; font-size: 12px; opacity: .65; }
+.brand { display: grid; justify-items: center; gap: 7px; }
+.brand-logo { width: 100%; display: grid; place-items: center; padding: 5px; border-radius: 12px; background: #fff; }
+.brand-logo img { display: block; max-width: 100%; height: auto; }
+.brand span { font-size: 12px; font-weight: 700; letter-spacing: .08em; }
 .sidebar nav { display: grid; gap: 8px; }
 .nav-item { padding: 11px 12px; border-radius: 9px; color: #dce7f5; }
 .nav-item:hover, .nav-item--active { background: rgba(255,255,255,.1); color: #fff; }
