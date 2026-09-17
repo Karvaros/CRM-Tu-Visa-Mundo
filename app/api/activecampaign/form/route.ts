@@ -9,7 +9,14 @@ export async function POST(request: Request) {
   if (Number(request.headers.get("content-length") ?? 0) > 16384) return new Response(null, { status: 413 });
   const raw = await request.text();
   if (raw.length > 16384) return new Response(null, { status: 413 });
-  if (!validWebhookSignature(raw, request.headers.get("x-tvm-signature"), secret)) {
+  const signature = request.headers.get("x-tvm-signature");
+  if (!validWebhookSignature(raw, signature, secret)) {
+    // Diagnostics never contain contact details, signature bytes, or secrets.
+    console.warn("ac-form-signature-rejected", {
+      present: Boolean(signature),
+      length: signature?.length ?? 0,
+      format: signature && /^[0-9a-f]{64}$/i.test(signature) ? "hex" : signature && /^[A-Za-z0-9+/]{43}=$/.test(signature) ? "base64" : "other",
+    });
     return new Response(null, { status: 401 });
   }
   try {
