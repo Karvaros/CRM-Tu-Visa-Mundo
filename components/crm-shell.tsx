@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
+import logoClaro from "@/logo_tvm.png";
 const links = [
   ["/", "Hoy"],
   ["/leads", "Leads"],
@@ -19,7 +20,7 @@ export function CrmShell({ children }: { children: ReactNode }) {
       <aside className="sidebar">
         <div className="brand">
           <div className="brand-logo">
-            <Image src="/logo-tu-visa-mundo.png" alt="Tu Visa Mundo" width={200} height={100} priority />
+            <Image src={logoClaro} alt="Tu Visa Mundo" priority />
           </div>
           <span>CRM V2</span>
         </div>
