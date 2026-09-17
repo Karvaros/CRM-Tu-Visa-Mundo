@@ -5,7 +5,8 @@ import { crmAuthEnabled } from "@/lib/crm-users";
 export const proxy = auth((request) => {
   if (!crmAuthEnabled()) return NextResponse.next();
   const path = request.nextUrl.pathname;
-  if (path === "/estudio" || path === "/api/estudio" || path.startsWith("/api/auth/")) return NextResponse.next();
+  // The webhook verifies its own HMAC signature before accessing lead data.
+  if (path === "/estudio" || path === "/api/estudio" || path === "/api/activecampaign/form" || path.startsWith("/api/auth/")) return NextResponse.next();
   if (path === "/acceso") return request.auth ? NextResponse.redirect(new URL("/", request.url)) : NextResponse.next();
   if (request.auth) return NextResponse.next();
   if (path.startsWith("/api/")) return NextResponse.json({ error: "No autorizado." }, { status: 401 });
