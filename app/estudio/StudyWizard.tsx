@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { useState } from "react";
 import studyResultCopy from "@/data/study-result-copy.json";
 import { classifyStudy, presentStudyQuestion, studyPages, studyProfileLabels, updateStudyAnswer, type StudyAnswers, type StudyOutcome } from "@/lib/study";
@@ -55,9 +54,6 @@ export default function StudyWizard({ enabled }: { enabled: boolean }) {
   return (
     <main className="study-screen">
       <div className="study-frame">
-        <header className="study-brand" aria-label="Tu Visa Mundo">
-          <Image src="/logo-tu-visa-mundo.png" alt="Tu Visa Mundo" width={200} height={100} priority />
-        </header>
         <div className="study-card">
           {!result ? (
             <>
