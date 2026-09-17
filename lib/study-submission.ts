@@ -57,6 +57,7 @@ export function createStudySubmission(options: { store: Store; campaign: Campaig
     const email = answers.email!;
     const currentLead = await store.findLead(email);
     let claim = await store.findClaim(email);
+    const recovering = Boolean(claim);
     if (!claim && currentLead?.PRIMER_ESTUDIO_ID && currentLead.PERFIL_ESTUDIO) {
       return { perfil: null, status: "EXISTING" };
     }
@@ -107,6 +108,21 @@ export function createStudySubmission(options: { store: Store; campaign: Campaig
     if (claim.status === "HISTORICAL") return { perfil: null, status: "EXISTING" };
     if (claim.status === "REVIEW") return { perfil: claim.perfil, status: "REVIEW" };
     if (!claim.automation) return { perfil: claim.perfil, status: "REVIEW" };
+    if (recovering) {
+      // A prior API call may have started the email before its response or our status write failed.
+      const contact = await campaign.findContact(email);
+      const run = contact ? await campaign.historicalStudy(contact.id) : null;
+      if (run) {
+        const sent = run.automation === claim.automation;
+        claim = { ...claim, acContactId: contact!.id, status: sent ? "SENT" : "REVIEW" };
+        await store.updateClaim(claim);
+        await store.updateLead(lead.id, {
+          AC_CONTACT_ID: contact!.id, AC_SYNC_STATUS: claim.status,
+          ...(!sent ? { PROXIMA_ACCION: "Revisar conflicto con un estudio anterior en ActiveCampaign" } : {}),
+        });
+        return { perfil: null, status: sent ? "EXISTING" : "REVIEW" };
+      }
+    }
     let contactId: string;
     try {
       const contact = await campaign.syncContact(claim.answers);

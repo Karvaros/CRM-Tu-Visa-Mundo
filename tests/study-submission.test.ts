@@ -91,3 +91,34 @@ test("guarda la primera clasificación y dispara solo su automatización de Acti
   assert.equal(interactions.length, 1);
   assert.deepEqual(startedAutomations, [301]);
 });
+
+test("si ActiveCampaign inicia el correo pero falla la respuesta, el reintento no lo duplica", async () => {
+  type Claim = NonNullable<Awaited<ReturnType<ReturnType<typeof createStudyStore>["findClaim"]>>>;
+  let claim: Claim | null = null;
+  let lead: Record<string, unknown> & { id: number } | null = null;
+  let contactCreated = false;
+  let started = 0;
+  const store = {
+    async findLead() { return lead; },
+    async findClaim() { return claim; },
+    async claimFirst(value: Claim) { claim = { ...value, rowId: 1 }; return { claim, created: true }; },
+    async createLead(fields: Record<string, unknown>) { lead = { id: 1, ...fields }; return lead; },
+    async updateLead(_id: number, fields: Record<string, unknown>) { lead = { ...lead!, ...fields }; return lead; },
+    async linkClaim() {},
+    async updateClaim(value: Claim) { claim = value; },
+  } as unknown as ReturnType<typeof createStudyStore>;
+  const campaign = {
+    automationForOutcome() { return 301; },
+    async findContact() { return contactCreated ? { id: "700", email: "ana@example.com" } : null; },
+    async historicalStudy() { return started ? { perfil: "A" as const, automation: 301, date: "2026-09-17T12:00:00Z" } : null; },
+    async syncContact() { contactCreated = true; return { id: "700", email: "ana@example.com" }; },
+    async startStudyAutomation() { started += 1; throw new Error("Respuesta perdida después del inicio"); },
+  } as unknown as ReturnType<typeof createActiveCampaign>;
+  const submit = createStudySubmission({ store, campaign, now: () => new Date("2026-09-17T12:00:00Z"), uuid: () => "one" });
+
+  assert.deepEqual(await submit(answers), { perfil: null, status: "ERROR" });
+  assert.equal(started, 1);
+  assert.deepEqual(await submit(answers), { perfil: null, status: "EXISTING" });
+  assert.equal(started, 1);
+  assert.equal((claim as Claim | null)?.status, "SENT");
+});
