@@ -41,6 +41,7 @@ function leadFields(claim: StudyClaim) {
     SECUENCIA_PAUSADA: true,
     ESTADO: isLow ? "NO_APTO" : "ESTUDIO_GRATUITO",
     SEGUIMIENTO_MANUAL: !isLow,
+    ...(isLow ? {} : { PROXIMO_CONTACTO: claim.createdAt }),
     PROXIMA_ACCION: isLow ? "Sin seguimiento comercial" : isPending
       ? "Revisar clasificación del Estudio de Perfil"
       : "Revisar estudio y continuar desde el último WhatsApp enviado",
@@ -94,6 +95,7 @@ export function createStudySubmission(options: { store: Store; campaign: Campaig
       delete baseFields.ESTADO;
       delete baseFields.PROXIMA_ACCION;
       delete baseFields.SEGUIMIENTO_MANUAL;
+      delete baseFields.PROXIMO_CONTACTO;
     }
     const lead = originalLead
       ? await store.updateLead(originalLead.id, baseFields)

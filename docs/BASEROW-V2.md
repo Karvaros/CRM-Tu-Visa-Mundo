@@ -1,6 +1,6 @@
 # Base Baserow para CRM Tu Visa Mundo V2
 
-Creada el 16 de septiembre de 2026 en el espacio de trabajo `236953`, independiente de las bases existentes `Lightweight CRM` y `Farmacia 2 TEST`. Base: `CRM Tu Visa Mundo V2`, ID `559655`. No contiene leads, interacciones ni mensajes reales; se retiraron las filas vacías generadas al crear las tablas.
+Creada el 16 de septiembre de 2026 en el espacio de trabajo `236953`, independiente de las bases existentes `Lightweight CRM` y `Farmacia 2 TEST`. Base: `CRM Tu Visa Mundo V2`, ID `559655`. La tabla LEADS ya contiene registros de pruebas y del Estudio de Perfil; no borrarlos al retirar la demostración.
 
 | Tabla | ID | Propósito |
 | --- | ---: | --- |
@@ -18,8 +18,11 @@ Creada el 16 de septiembre de 2026 en el espacio de trabajo `236953`, independie
 
 Los estados, perfiles y segmentos son texto controlado por el código de dominio; aún no hay opciones de selección ni valores cargados. El ID interno de fila de Baserow será el identificador del registro: no se creó un campo `ID` duplicado. Los mensajes comerciales existentes siguen en el repositorio y deberán revisarse antes de importarlos a MENSAJES.
 
-## Conexión pendiente
+## Estado de la conexión
 
-Crear un token de base de datos con acceso mínimo a estas tres tablas y configurarlo **solo del lado del servidor** del proyecto Vercel, junto con los ID de las tablas. No guardar el token en GitHub ni exponerlo mediante `NEXT_PUBLIC_`. Antes de enviar resultados reales a ActiveCampaign, implementar la escritura y lectura de Baserow, la reconciliación de contactos por un identificador estable, la reserva de la primera clasificación y los reintentos de sincronización.
+El token de base de datos está configurado como secreto `BASEROW_TOKEN` en Production de Vercel. Los ID de tabla figuran en las variables de entorno. La lectura paginada y la conversión al modelo del CRM están implementadas; el token permanece en el servidor y no se expone mediante `NEXT_PUBLIC_`. El CRM exige inicio de sesión y consulta Baserow a través de `/api/crm`.
 
-`PRIMER_ESTUDIO_ID` y `ID_EVENTO_EXTERNO` por sí solos no hacen atómica una comprobación seguida de una escritura. La integración debe impedir que dos envíos simultáneos del mismo contacto activen dos rutas distintas; hasta resolverlo, `/estudio` permanece como vista de prueba y la página pública conserva el formulario actual.
+Con `CRM_AUTH_ENABLED=true`, la UI muestra LEADS, INTERACCIONES y MENSAJES de Baserow. Permite responder, reprogramar y cambiar estado desde la ficha; el servidor actualiza LEADS y registra la acción en INTERACCIONES. No existe restablecimiento de datos reales. Los estudios A/B/C se programan para revisión manual; D queda cerrado. La tabla MENSAJES permanece vacía hasta importar y revisar las plantillas: no se debe atribuir ningún envío automático ni ofrecer textos ficticios en producción.
+
+Pendiente: cargar y revisar plantillas en MENSAJES, asignar la secuencia y el hito correcto a cada lead después del estudio, y comprobar las acciones de escritura con la cuenta de asesor en producción. El estudio público ya está conectado a ActiveCampaign. La conservación del primer resultado se apoya en el campo único `ID_EVENTO_EXTERNO`.
+

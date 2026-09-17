@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { createBaserowReader } from "../lib/baserow";
+import { createBaserowReader, mapLead } from "../lib/baserow";
+import { priority } from "../lib/crm";
 const tables = { leads: 101, interacciones: 102, mensajes: 103 };
 
 test("lee las tres tablas con paginación y traduce relaciones a IDs del CRM", async () => {
@@ -48,3 +49,13 @@ test("rechaza una continuación ajena sin enviarle el token", async () => {
   await assert.rejects(createBaserowReader({ token: "secreto-de-prueba", tables, fetcher }).load(), /continuación inválida/);
   assert.equal(calls, 3);
 });
+
+test("un estudio pendiente con fecha y hora aparece en HOY sin inventar un mensaje", () => {
+  const lead = mapLead({ id: 77, NOMBRE: "María", ESTADO: "ESTUDIO_GRATUITO",
+    FECHA_PRIMER_ESTUDIO: "2026-09-17T13:00:00Z", SEGUIMIENTO_MANUAL: true,
+    SECUENCIA_PAUSADA: true, PROXIMA_ACCION: "Revisar estudio" });
+  assert.equal(lead.proximoContacto, "2026-09-17");
+  assert.equal(priority(lead, "2026-09-17"), "MANUAL");
+  assert.equal(lead.proximoMensajeId, undefined);
+});
+

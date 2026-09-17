@@ -9,21 +9,25 @@ import {
   type ReactNode,
 } from "react";
 import { createMockRepository } from "@/lib/mock-repository";
+import { createHttpRepository } from "@/lib/http-repository";
 import type { CrmRepository } from "@/lib/repository";
 import type { CrmData, LeadCommand, Message } from "@/lib/types";
 import { today } from "@/lib/dates";
+import { usePathname } from "next/navigation";
 
 interface CrmContextValue {
   data: CrmData | null;
   date: string;
   busy: boolean;
+  realData: boolean;
   execute: (command: LeadCommand) => Promise<boolean>;
   saveMessage: (message: Message) => Promise<boolean>;
   reset: () => Promise<boolean>;
   notify: (message: string) => void;
 }
 const Context = createContext<CrmContextValue | null>(null);
-export function CrmProvider({ children }: { children: ReactNode }) {
+export function CrmProvider({ children, realData }: { children: ReactNode; realData: boolean }) {
+  const pathname = usePathname();
   const repository = useRef<CrmRepository | null>(null);
   const lock = useRef(false);
   const [data, setData] = useState<CrmData | null>(null);
@@ -33,20 +37,21 @@ export function CrmProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState("");
   useEffect(() => {
     setDate(today());
+    if (pathname === "/estudio" || pathname === "/acceso") return;
     try {
-      repository.current = createMockRepository(window.sessionStorage);
+      repository.current = realData
+        ? createHttpRepository()
+        : createMockRepository(window.sessionStorage);
       repository.current
         .load()
         .then(setData)
         .catch((error) => setError(error.message));
     } catch {
-      setError(
-        "El navegador no permite guardar la demo. Habilita el almacenamiento de la sesión y recarga.",
-      );
+      setError("No se pudo iniciar el CRM. Recarga la página.");
     }
     const timer = setInterval(() => setDate(today()), 30000);
     return () => clearInterval(timer);
-  }, []);
+  }, [pathname, realData]);
   async function run(
     action: (repo: CrmRepository) => Promise<CrmData>,
     success: string,
@@ -77,11 +82,12 @@ export function CrmProvider({ children }: { children: ReactNode }) {
         data,
         date,
         busy,
+        realData,
         notify: setNotice,
         execute: (command) =>
           run(
             (repo) => repo.execute(command),
-            "Acción guardada en la demostración.",
+            realData ? "Acción guardada en Baserow." : "Acción guardada en la demostración.",
           ),
         saveMessage: (message) =>
           run(
@@ -103,7 +109,7 @@ export function CrmProvider({ children }: { children: ReactNode }) {
       {error && (
         <div className="error-banner" role="alert">
           {error}{" "}
-          {!data && (
+          {!data && !realData && (
             <button
               onClick={() => run((repo) => repo.reset(), "Demo restablecida.")}
             >
@@ -121,3 +127,4 @@ export function useCrm() {
   if (!value) throw new Error("Falta CrmProvider.");
   return value;
 }
+

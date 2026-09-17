@@ -40,9 +40,9 @@ export function CrmShell({ children, authEnabled }: { children: ReactNode; authE
         <div className="sidebar-note">
           {authEnabled ? "Sesión privada" : "Asesor principal"}
           <br />
-          V2 · demostración
+          {authEnabled ? "V2 · Baserow" : "V2 · demostración"}
           <br />
-          Cambios guardados en esta pestaña.
+          {authEnabled ? "Datos compartidos entre sesiones." : "Cambios guardados en esta pestaña."}
           {authEnabled && <form action={logout}>
             <button type="submit" className="logout-button">Cerrar sesión</button>
           </form>}

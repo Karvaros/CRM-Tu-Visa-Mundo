@@ -14,7 +14,7 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body>
-        <CrmProvider>
+        <CrmProvider realData={process.env.CRM_AUTH_ENABLED === "true"}>
           <CrmShell authEnabled={process.env.CRM_AUTH_ENABLED === "true"}>{children}</CrmShell>
         </CrmProvider>
       </body>

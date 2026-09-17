@@ -82,12 +82,12 @@ export function LeadCard({ lead }: { lead: Lead }) {
       <div className="message-box">
         <div className="message-box__title">
           {message?.titulo ?? "Sin mensaje pendiente"}{" "}
-          {message?.requiereRevision
+          {!message ? "" : message.requiereRevision
             ? "· Requiere revisión"
             : "· Mensaje establecido"}
         </div>
         <p>{text || "Revisa la ficha y define la próxima acción."}</p>
-        {message?.recursoTipo !== "TEXTO" && (
+        {message && message.recursoTipo !== "TEXTO" && (
           <p className="resource-note">
             Recurso: {message?.recursoTipo}
             {message?.recursoUrl
@@ -318,7 +318,7 @@ export function LeadCard({ lead }: { lead: Lead }) {
             ))}
           {!data?.interacciones.some((item) => item.leadId === lead.id) && (
             <p className="muted">
-              Sin acciones registradas en esta demostración.
+              Sin acciones registradas.
             </p>
           )}
         </Modal>
@@ -326,3 +326,4 @@ export function LeadCard({ lead }: { lead: Lead }) {
     </article>
   );
 }
+

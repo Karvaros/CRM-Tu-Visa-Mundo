@@ -49,7 +49,7 @@ const titles: Record<string, string> = {
   configuracion: "Configuración",
 };
 export function CrmView({ view }: { view: string }) {
-  const { data, date, busy, reset } = useCrm();
+  const { data, date, busy, reset, realData } = useCrm();
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("");
   const [destination, setDestination] = useState("");
@@ -57,7 +57,7 @@ export function CrmView({ view }: { view: string }) {
   const [messageSequence, setMessageSequence] = useState("");
   const [reviewOnly, setReviewOnly] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
-  if (!data) return <p role="status">Cargando demostración…</p>;
+  if (!data) return <p role="status">Cargando CRM…</p>;
   const destinations = [
     ...mainDestinations,
     ...[...new Set(data.leads.map((lead) => destinationName(lead.destino)))].filter(
@@ -80,7 +80,7 @@ export function CrmView({ view }: { view: string }) {
     <>
       <header className="page-header">
         <div>
-          <div className="eyebrow">Agenda comercial · modo demo</div>
+          <div className="eyebrow">Agenda comercial{realData ? "" : " · modo demo"}</div>
           <h1>{titles[view]}</h1>
           <p>
             {view === "hoy"
@@ -90,10 +90,11 @@ export function CrmView({ view }: { view: string }) {
         </div>
         <div className="date-chip">{dateLabel(date)}</div>
       </header>
-      <p className="demo-note">
-        Datos ficticios · mensajes pendientes de revisión · cambios guardados
-        solo en esta pestaña.
-      </p>
+      {realData ? (
+        <p className="demo-note">Datos de Baserow · los mensajes de WhatsApp solo se registran cuando confirmas que fueron enviados.</p>
+      ) : (
+        <p className="demo-note">Datos ficticios · mensajes pendientes de revisión · cambios guardados solo en esta pestaña.</p>
+      )}
       {view === "hoy" && (
         <section className="metrics" aria-label="Resumen del día">
           {[
@@ -276,6 +277,9 @@ export function CrmView({ view }: { view: string }) {
       )}
       {view === "mensajes" && (
         <>
+          {realData && data.mensajes.length === 0 && (
+            <p className="empty-state">La tabla MENSAJES de Baserow está vacía. Todavía no hay textos de WhatsApp asignados ni envíos para confirmar.</p>
+          )}
           <p className="empty-state">
             Mensajes establecidos para difusión, sin variable de nombre. Se
             separan en SIN ESTUDIO y ESTUDIO A/B/C. Los cambios no alteran el
@@ -331,33 +335,30 @@ export function CrmView({ view }: { view: string }) {
       )}
       {view === "configuracion" && (
         <section className="lead-card">
-          <h2>Entorno de demostración</h2>
+          <h2>{realData ? "CRM conectado" : "Entorno de demostración"}</h2>
           <dl>
             <dt>Asesor</dt>
             <dd>Asesor principal · campo preparado por lead</dd>
             <dt>Zona horaria</dt>
             <dd>{TIME_ZONE}</dd>
             <dt>Almacenamiento</dt>
-            <dd>
-              Sesión de esta pestaña. Persiste al recargar; no se comparte entre
-              dispositivos.
-            </dd>
+            <dd>{realData ? "Baserow; datos compartidos entre dispositivos autorizados." : "Sesión de esta pestaña. Persiste al recargar; no se comparte entre dispositivos."}</dd>
             <dt>Base de datos</dt>
-            <dd>Baserow pendiente de conexión.</dd>
+            <dd>{realData ? "Baserow conectado." : "Baserow pendiente de conexión."}</dd>
             <dt>Secuencias</dt>
             <dd>
               Solo planifican contactos; el asesor realiza y confirma cada
               envío.
             </dd>
           </dl>
-          <button
+          {!realData && <button
             className="button button--secondary"
             disabled={busy}
             onClick={() => setConfirmReset(true)}
           >
             Restablecer datos demo
-          </button>
-          {confirmReset && (
+          </button>}
+          {!realData && confirmReset && (
             <Modal
               title="Restablecer demostración"
               close={() => setConfirmReset(false)}
@@ -384,7 +385,7 @@ export function CrmView({ view }: { view: string }) {
   );
 }
 function MessageEditor({ message }: { message: Message }) {
-  const { busy, saveMessage } = useCrm();
+  const { busy, saveMessage, realData } = useCrm();
   return (
     <form
       className="lead-card"
@@ -478,8 +479,8 @@ function MessageEditor({ message }: { message: Message }) {
           {note}
         </p>
       ))}
-      <button className="button button--primary" disabled={busy}>
-        Guardar cambios
+      <button className="button button--primary" disabled={busy || realData}>
+        {realData ? "Edición pendiente en Baserow" : "Guardar cambios"}
       </button>
     </form>
   );

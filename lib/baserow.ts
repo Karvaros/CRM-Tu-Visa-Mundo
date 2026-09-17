@@ -31,6 +31,9 @@ function number(row: Row, key: string): number {
 function segments(raw: string): MessageSegment[] {
   return raw.split(",").map((part) => part.trim()).filter(Boolean) as MessageSegment[];
 }
+function dateOnly(raw: string | undefined): string | undefined {
+  return raw?.slice(0, 10) || undefined;
+}
 
 export function mapLead(row: Row): Lead {
   return {
@@ -43,11 +46,13 @@ export function mapLead(row: Row): Lead {
     perfilEstudio: optional(row, "PERFIL_ESTUDIO") as Lead["perfilEstudio"],
     primerEstudioId: optional(row, "PRIMER_ESTUDIO_ID"),
     fechaPrimerEstudio: optional(row, "FECHA_PRIMER_ESTUDIO"),
-    secuenciaId: value(row, "SECUENCIA_ID"), fechaIngreso: value(row, "FECHA_INGRESO"),
+    secuenciaId: value(row, "SECUENCIA_ID"), fechaIngreso: dateOnly(optional(row, "FECHA_INGRESO")) ?? "",
     estado: value(row, "ESTADO") as Lead["estado"],
     ultimoContacto: optional(row, "ULTIMO_CONTACTO"),
     ultimoMensajeId: linkedId(row, "ULTIMO_MENSAJE"),
-    proximoContacto: optional(row, "PROXIMO_CONTACTO"),
+    proximoContacto: dateOnly(optional(row, "PROXIMO_CONTACTO")) ??
+      (boolean(row, "SEGUIMIENTO_MANUAL") && value(row, "ESTADO") === "ESTUDIO_GRATUITO"
+        ? dateOnly(optional(row, "FECHA_PRIMER_ESTUDIO")) : undefined),
     proximaAccion: value(row, "PROXIMA_ACCION"),
     proximoMensajeId: linkedId(row, "PROXIMO_MENSAJE"),
     seguimientoManual: boolean(row, "SEGUIMIENTO_MANUAL"),
@@ -125,3 +130,4 @@ export function createBaserowReader(options: {
     },
   };
 }
+
