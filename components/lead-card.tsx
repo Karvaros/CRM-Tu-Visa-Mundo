@@ -7,7 +7,7 @@ import { useCrm } from "./crm-provider";
 import { Modal } from "./modal";
 
 export function LeadCard({ lead }: { lead: Lead }) {
-  const { data, date, busy, execute, notify } = useCrm();
+  const { data, date, clock, busy, execute, notify } = useCrm();
   const [panel, setPanel] = useState<"sent" | "reschedule" | "detail" | null>(
     null,
   );
@@ -16,7 +16,7 @@ export function LeadCard({ lead }: { lead: Lead }) {
   );
   const text = renderMessage(message, lead);
   const canSend = Boolean(
-    text && priority(lead, date) && !message?.requiereRevision,
+    text && priority(lead, date, new Date(clock || Date.now())) && !message?.requiereRevision,
   );
   const label =
     leadStatuses.indexOf(lead.estado) >= 0
@@ -326,4 +326,3 @@ export function LeadCard({ lead }: { lead: Lead }) {
     </article>
   );
 }
-

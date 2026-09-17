@@ -18,6 +18,7 @@ import { usePathname } from "next/navigation";
 interface CrmContextValue {
   data: CrmData | null;
   date: string;
+  clock: number;
   busy: boolean;
   realData: boolean;
   execute: (command: LeadCommand) => Promise<boolean>;
@@ -32,6 +33,7 @@ export function CrmProvider({ children, realData }: { children: ReactNode; realD
   const lock = useRef(false);
   const [data, setData] = useState<CrmData | null>(null);
   const [date, setDate] = useState("");
+  const [clock, setClock] = useState(0);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
@@ -49,7 +51,7 @@ export function CrmProvider({ children, realData }: { children: ReactNode; realD
     } catch {
       setError("No se pudo iniciar el CRM. Recarga la página.");
     }
-    const timer = setInterval(() => setDate(today()), 30000);
+    const timer = setInterval(() => { setDate(today()); setClock(Date.now()); }, 30000);
     return () => clearInterval(timer);
   }, [pathname, realData]);
   async function run(
@@ -81,6 +83,7 @@ export function CrmProvider({ children, realData }: { children: ReactNode; realD
       value={{
         data,
         date,
+        clock,
         busy,
         realData,
         notify: setNotice,
@@ -127,4 +130,3 @@ export function useCrm() {
   if (!value) throw new Error("Falta CrmProvider.");
   return value;
 }
-

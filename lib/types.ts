@@ -45,6 +45,8 @@ export interface Lead {
   ultimoContacto?: string;
   ultimoMensajeId?: string;
   proximoContacto?: string;
+  /** Hora exacta de espera para registros nuevos de formularios externos. */
+  proximoContactoExacto?: string;
   proximaAccion: string;
   proximoMensajeId?: string;
   seguimientoManual: boolean;

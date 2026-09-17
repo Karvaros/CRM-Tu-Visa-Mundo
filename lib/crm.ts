@@ -11,9 +11,11 @@ import {
 
 export const isClosed = (lead: Lead) =>
   ["CLIENTE", "NO_APTO", "INACTIVO"].includes(lead.estado);
-export function priority(lead: Lead, date: string): LeadPriority | null {
+export function priority(lead: Lead, date: string, now = new Date()): LeadPriority | null {
   if (isClosed(lead) || !lead.proximoContacto || lead.proximoContacto > date)
     return null;
+  if (lead.estado === "NUEVO" && lead.proximoContactoExacto &&
+    new Date(lead.proximoContactoExacto).getTime() > now.getTime()) return null;
   if (lead.seguimientoManual) return "MANUAL";
   if (lead.secuenciaPausada) return null;
   if (lead.estado === "NUEVO") return "NUEVO";
@@ -53,7 +55,7 @@ export function applyCommand(
   let tipo: CrmData["interacciones"][number]["tipo"];
   let message: Message | undefined;
   if (command.type === "sent") {
-    if (!priority(lead, date))
+    if (!priority(lead, date, now))
       throw new Error("Este lead no tiene un envío pendiente para hoy.");
     message = result.mensajes.find((item) => item.id === lead.proximoMensajeId);
     if (
@@ -81,6 +83,7 @@ export function applyCommand(
           next.soloDiasHabiles,
         )
       : undefined;
+    lead.proximoContactoExacto = undefined;
     lead.proximaAccion = next
       ? next.titulo
       : "Esperar respuesta; evaluar próxima acción";

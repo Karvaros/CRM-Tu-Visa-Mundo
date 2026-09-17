@@ -1,4 +1,5 @@
 import type { CrmData, Interaction, Lead, Message, MessageSegment } from "./types";
+import { today } from "./dates";
 
 export type BaserowTables = { leads: number; interacciones: number; mensajes: number };
 const defaultBaseUrl = "https://api.baserow.io";
@@ -50,9 +51,12 @@ export function mapLead(row: Row): Lead {
     estado: value(row, "ESTADO") as Lead["estado"],
     ultimoContacto: optional(row, "ULTIMO_CONTACTO"),
     ultimoMensajeId: linkedId(row, "ULTIMO_MENSAJE"),
-    proximoContacto: dateOnly(optional(row, "PROXIMO_CONTACTO")) ??
+    proximoContacto: (optional(row, "PROXIMO_CONTACTO")
+      ? today(new Date(value(row, "PROXIMO_CONTACTO"))) : undefined) ??
       (boolean(row, "SEGUIMIENTO_MANUAL") && value(row, "ESTADO") === "ESTUDIO_GRATUITO"
         ? dateOnly(optional(row, "FECHA_PRIMER_ESTUDIO")) : undefined),
+    proximoContactoExacto: value(row, "ESTADO") === "NUEVO" && value(row, "ORIGEN").startsWith("FORM_AC_")
+      ? optional(row, "PROXIMO_CONTACTO") : undefined,
     proximaAccion: value(row, "PROXIMA_ACCION"),
     proximoMensajeId: linkedId(row, "PROXIMO_MENSAJE"),
     seguimientoManual: boolean(row, "SEGUIMIENTO_MANUAL"),
@@ -130,4 +134,3 @@ export function createBaserowReader(options: {
     },
   };
 }
-

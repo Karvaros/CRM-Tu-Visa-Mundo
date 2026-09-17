@@ -2,6 +2,7 @@ import { createActiveCampaign } from "@/lib/activecampaign";
 import { createStudyStore } from "@/lib/study-store";
 import { createStudySubmission } from "@/lib/study-submission";
 import { studyAutomations, studyFields, studyTableIds } from "@/lib/study-config";
+import { createConfiguredBaserowReader } from "@/lib/baserow-server";
 
 export const runtime = "nodejs";
 
@@ -36,7 +37,15 @@ export async function POST(request: Request) {
       apiKey: process.env.ACTIVE_CAMPAIGN_API_KEY ?? "",
       automations: studyAutomations(), fields: studyFields(),
     });
-    const submit = createStudySubmission({ store, campaign });
+    const submit = createStudySubmission({ store, campaign,
+      async selectWhatsApp(destination, profile) {
+        // Solo Canadá tiene textos posestudio aprobados en este momento.
+        if (!/^(Canadá|Canada)$/i.test(destination) || !["A", "B", "C"].includes(profile)) return undefined;
+        const data = await createConfiguredBaserowReader().load();
+        return data.mensajes.find((message) => message.secuenciaId === "estudio-canada" &&
+          message.orden === 2 && message.segmento.includes(`ESTUDIO_${profile}` as "ESTUDIO_A" | "ESTUDIO_B" | "ESTUDIO_C"));
+      },
+    });
     const result = await submit(payload);
     return Response.json(result, {
       status: result.status === "PROCESSING" ? 202 : result.status === "ERROR" ? 503 : 200,

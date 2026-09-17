@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { dateLabel, TIME_ZONE } from "@/lib/dates";
 import { priority } from "@/lib/crm";
-import { leadStatuses, type LeadPriority, type Message } from "@/lib/types";
+import { leadStatuses, type Lead, type LeadPriority, type Message } from "@/lib/types";
 import { useCrm } from "./crm-provider";
 import { LeadCard } from "./lead-card";
 import { Modal } from "./modal";
@@ -49,7 +49,9 @@ const titles: Record<string, string> = {
   configuracion: "Configuración",
 };
 export function CrmView({ view }: { view: string }) {
-  const { data, date, busy, reset, realData } = useCrm();
+  const { data, date, clock, busy, reset, realData } = useCrm();
+  const dueKind = (lead: Lead) =>
+    priority(lead, date, new Date(clock || Date.now()));
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("");
   const [destination, setDestination] = useState("");
@@ -73,7 +75,7 @@ export function CrmView({ view }: { view: string }) {
       (view !== "leads" || !filter || lead.estado === filter),
   );
   const due = leads.filter((lead) => {
-    const kind = priority(lead, date);
+    const kind = dueKind(lead);
     return kind && (!agendaFilter || (agendaFilter === "SEGUIMIENTOS" ? kind !== "NUEVO" : kind === "NUEVO"));
   });
   return (
@@ -101,15 +103,15 @@ export function CrmView({ view }: { view: string }) {
             ["Pendientes hoy", due.length],
             [
               "Nuevos",
-              due.filter((lead) => priority(lead, date) === "NUEVO").length,
+              due.filter((lead) => dueKind(lead) === "NUEVO").length,
             ],
             [
               "Vencidos",
-              due.filter((lead) => priority(lead, date) === "ATRASADO").length,
+              due.filter((lead) => dueKind(lead) === "ATRASADO").length,
             ],
             [
               "Manuales",
-              due.filter((lead) => priority(lead, date) === "MANUAL").length,
+              due.filter((lead) => dueKind(lead) === "MANUAL").length,
             ],
           ].map(([label, count]) => (
             <div className="metric" key={label}>
@@ -175,10 +177,10 @@ export function CrmView({ view }: { view: string }) {
           )}
           {sections.filter((section) =>
             (!agendaFilter || (agendaFilter === "SEGUIMIENTOS" ? section.key !== "NUEVO" : section.key === "NUEVO")) &&
-            (!(search || destination || agendaFilter) || due.some((lead) => priority(lead, date) === section.key)),
+            (!(search || destination || agendaFilter) || due.some((lead) => dueKind(lead) === section.key)),
           ).map((section) => {
             const items = due
-              .filter((lead) => priority(lead, date) === section.key)
+              .filter((lead) => dueKind(lead) === section.key)
               .sort((a, b) =>
                 (a.proximoContacto ?? "").localeCompare(
                   b.proximoContacto ?? "",
@@ -350,6 +352,15 @@ export function CrmView({ view }: { view: string }) {
               envío.
             </dd>
           </dl>
+          {realData && data.mensajes.length === 0 && <button
+            className="button button--primary"
+            disabled={busy}
+            onClick={async () => {
+              const response = await fetch("/api/crm/messages/import", { method: "POST" });
+              if (response.ok) window.location.reload();
+              else window.alert("No se pudieron cargar los mensajes. Revisa los permisos de Baserow.");
+            }}
+          >Cargar mensajes establecidos en Baserow</button>}
           {!realData && <button
             className="button button--secondary"
             disabled={busy}
@@ -484,4 +495,3 @@ function MessageEditor({ message }: { message: Message }) {
     </form>
   );
 }
-

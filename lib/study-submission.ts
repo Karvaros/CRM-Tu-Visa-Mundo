@@ -1,6 +1,7 @@
 import { classifyStudy, studyOptions, type StudyAnswers } from "./study";
 import type { StudyClaim, StoredProfile, createStudyStore } from "./study-store";
 import type { createActiveCampaign } from "./activecampaign";
+import type { Message } from "./types";
 
 type Store = ReturnType<typeof createStudyStore>;
 type Campaign = ReturnType<typeof createActiveCampaign>;
@@ -39,6 +40,8 @@ function leadFields(claim: StudyClaim) {
     PRIMER_ESTUDIO_ID: claim.id,
     FECHA_PRIMER_ESTUDIO: claim.createdAt,
     SECUENCIA_PAUSADA: true,
+    SECUENCIA_ID: "",
+    PROXIMO_MENSAJE: [],
     ESTADO: isLow ? "NO_APTO" : "ESTUDIO_GRATUITO",
     SEGUIMIENTO_MANUAL: !isLow,
     ...(isLow ? {} : { PROXIMO_CONTACTO: claim.createdAt }),
@@ -50,8 +53,11 @@ function leadFields(claim: StudyClaim) {
   };
 }
 
-export function createStudySubmission(options: { store: Store; campaign: Campaign; now?: () => Date; uuid?: () => string }) {
-  const { store, campaign, now = () => new Date(), uuid = () => crypto.randomUUID() } = options;
+export function createStudySubmission(options: {
+  store: Store; campaign: Campaign; now?: () => Date; uuid?: () => string;
+  selectWhatsApp?: (destination: string, profile: StoredProfile) => Promise<Message | undefined>;
+}) {
+  const { store, campaign, now = () => new Date(), uuid = () => crypto.randomUUID(), selectWhatsApp } = options;
 
   return async function submit(raw: unknown): Promise<SubmissionResult> {
     const answers = validateStudyAnswers(raw);
@@ -90,12 +96,25 @@ export function createStudySubmission(options: { store: Store; campaign: Campaig
       return { perfil: null, status: "EXISTING" };
     }
     const baseFields: Record<string, unknown> = leadFields(claim);
-    if (originalLead && (["CLIENTE", "NO_APTO", "INACTIVO"].includes(String(originalLead.ESTADO))
-      || originalLead.SEGUIMIENTO_MANUAL === true || originalLead.ESTADO === "EN_CONVERSACION")) {
+    const preserveManual = Boolean(originalLead && (["CLIENTE", "NO_APTO", "INACTIVO"].includes(String(originalLead.ESTADO))
+      || originalLead.SEGUIMIENTO_MANUAL === true || originalLead.ESTADO === "EN_CONVERSACION"));
+    if (!preserveManual && ["A", "B", "C"].includes(claim.perfil) && selectWhatsApp) {
+      const next = await selectWhatsApp(claim.answers.destino!, claim.perfil);
+      if (next && !next.requiereRevision) {
+        baseFields.SECUENCIA_ID = next.secuenciaId;
+        baseFields.PROXIMO_MENSAJE = [Number(next.id)];
+        baseFields.SECUENCIA_PAUSADA = false;
+        baseFields.SEGUIMIENTO_MANUAL = false;
+        baseFields.PROXIMA_ACCION = next.titulo;
+      }
+    }
+    if (originalLead) baseFields.VERSION = Number(originalLead.VERSION || 0) + 1;
+    if (preserveManual) {
       delete baseFields.ESTADO;
       delete baseFields.PROXIMA_ACCION;
       delete baseFields.SEGUIMIENTO_MANUAL;
       delete baseFields.PROXIMO_CONTACTO;
+      baseFields.SECUENCIA_PAUSADA = true;
     }
     const lead = originalLead
       ? await store.updateLead(originalLead.id, baseFields)
@@ -144,4 +163,3 @@ export function createStudySubmission(options: { store: Store; campaign: Campaig
     return { perfil: claim.perfil, status: "SENT" };
   };
 }
-
