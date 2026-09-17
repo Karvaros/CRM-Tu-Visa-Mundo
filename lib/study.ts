@@ -46,6 +46,14 @@ export type StudyOutcome =
   | { perfil: "A" | "B" | "C" | "D"; correo: string; motivo: string; crm: { segmento: "ESTUDIO_A" | "ESTUDIO_B" | "ESTUDIO_C" | "ESTUDIO_D"; estado: "ESTUDIO_GRATUITO" | "NO_APTO"; accion: string } }
   | { perfil: "PENDIENTE"; correo: null; motivo: string; crm: { segmento: null; estado: null; accion: string } };
 
+export const studyProfileLabels: Record<StudyOutcome["perfil"], string> = {
+  A: "Perfil Alto",
+  B: "Perfil Medio Alto",
+  C: "Perfil Medio",
+  D: "Perfil Bajo",
+  PENDIENTE: "Pendiente de revisión",
+};
+
 function outcome(perfil: "A" | "B" | "C" | "D", correo: string, motivo: string): StudyOutcome {
   return {
     perfil, correo, motivo,

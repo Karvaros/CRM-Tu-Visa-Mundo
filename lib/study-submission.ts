@@ -1,0 +1,127 @@
+import { classifyStudy, studyOptions, type StudyAnswers } from "./study";
+import type { StudyClaim, StoredProfile, createStudyStore } from "./study-store";
+import type { createActiveCampaign } from "./activecampaign";
+
+type Store = ReturnType<typeof createStudyStore>;
+type Campaign = ReturnType<typeof createActiveCampaign>;
+export type SubmissionResult = { perfil: StoredProfile | null; status: "SENT" | "EXISTING" | "REVIEW" | "PROCESSING" | "ERROR" };
+
+export function validateStudyAnswers(input: unknown): StudyAnswers {
+  if (!input || typeof input !== "object" || Array.isArray(input)) throw new Error("Respuestas inválidas.");
+  const record = input as Record<string, unknown>;
+  const answers: StudyAnswers = {};
+  for (const [key, choices] of Object.entries(studyOptions)) {
+    if (typeof record[key] !== "string" || !(choices as readonly string[]).includes(record[key])) {
+      throw new Error(`Selecciona una respuesta válida en ${key}.`);
+    }
+    answers[key as keyof typeof studyOptions] = record[key] as string;
+  }
+  if ([record.nombre, record.email, record.telefono].some((value) => typeof value !== "string")) {
+    throw new Error("Completa tus datos de contacto.");
+  }
+  const nombre = (record.nombre as string).trim();
+  const email = (record.email as string).trim().toLowerCase();
+  const telefono = (record.telefono as string).trim();
+  if (nombre.length < 3 || nombre.length > 120) throw new Error("Indica tu nombre completo.");
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254) throw new Error("Indica un correo válido.");
+  if (!/^\+?[0-9()\s.-]{8,25}$/.test(telefono)) throw new Error("Indica un teléfono válido con código de país.");
+  return { ...answers, nombre, email, telefono };
+}
+
+function leadFields(claim: StudyClaim) {
+  const isLow = claim.perfil === "D";
+  const isPending = claim.perfil === "PENDIENTE";
+  return {
+    DESTINO: claim.answers.destino,
+    TIPO_VISA: "Turismo",
+    TIPO_ESTUDIO: "GRATUITO",
+    ...(isPending ? {} : { PERFIL_ESTUDIO: claim.perfil, SEGMENTO: `ESTUDIO_${claim.perfil}` }),
+    PRIMER_ESTUDIO_ID: claim.id,
+    FECHA_PRIMER_ESTUDIO: claim.createdAt.slice(0, 10),
+    SECUENCIA_PAUSADA: true,
+    ESTADO: isLow ? "NO_APTO" : "ESTUDIO_GRATUITO",
+    SEGUIMIENTO_MANUAL: !isLow,
+    PROXIMA_ACCION: isLow ? "Sin seguimiento comercial" : isPending
+      ? "Revisar clasificación del Estudio de Perfil"
+      : "Revisar estudio y continuar desde el último WhatsApp enviado",
+    AC_SYNC_STATUS: claim.status,
+    ...(claim.acContactId ? { AC_CONTACT_ID: claim.acContactId } : {}),
+  };
+}
+
+export function createStudySubmission(options: { store: Store; campaign: Campaign; now?: () => Date; uuid?: () => string }) {
+  const { store, campaign, now = () => new Date(), uuid = () => crypto.randomUUID() } = options;
+
+  return async function submit(raw: unknown): Promise<SubmissionResult> {
+    const answers = validateStudyAnswers(raw);
+    const email = answers.email!;
+    const currentLead = await store.findLead(email);
+    let claim = await store.findClaim(email);
+    if (!claim && currentLead?.PRIMER_ESTUDIO_ID && currentLead.PERFIL_ESTUDIO) {
+      return { perfil: null, status: "EXISTING" };
+    }
+    if (claim?.status === "PROCESSING" && now().getTime() - new Date(claim.createdAt).getTime() < 120_000) {
+      return { perfil: null, status: "PROCESSING" };
+    }
+    if (!claim) {
+      const contact = await campaign.findContact(email);
+      const historical = contact ? await campaign.historicalStudy(contact.id) : null;
+      const outcome = classifyStudy(answers);
+      const profile = historical?.perfil ?? outcome.perfil;
+      const historicalDate = historical?.date && !Number.isNaN(Date.parse(historical.date))
+        ? new Date(historical.date).toISOString() : null;
+      const proposed: StudyClaim = {
+        id: uuid(), email, answers, perfil: profile,
+        automation: historical?.automation ?? campaign.automationForOutcome(outcome),
+        createdAt: historicalDate ?? now().toISOString(),
+        status: historical ? "HISTORICAL" : profile === "PENDIENTE" ? "REVIEW" : "PROCESSING",
+        legacy: Boolean(historical),
+        acContactId: historical ? contact?.id : undefined,
+      };
+      const result = await store.claimFirst(proposed);
+      claim = result.claim;
+      if (!result.created && claim.status === "PROCESSING") return { perfil: null, status: "PROCESSING" };
+    }
+
+    const originalLead = currentLead ?? await store.findLead(email);
+    if (originalLead?.PRIMER_ESTUDIO_ID && originalLead.PRIMER_ESTUDIO_ID !== claim.id) {
+      return { perfil: null, status: "EXISTING" };
+    }
+    const baseFields: Record<string, unknown> = leadFields(claim);
+    if (originalLead && (["CLIENTE", "NO_APTO", "INACTIVO"].includes(String(originalLead.ESTADO))
+      || originalLead.SEGUIMIENTO_MANUAL === true || originalLead.ESTADO === "EN_CONVERSACION")) {
+      delete baseFields.ESTADO;
+      delete baseFields.PROXIMA_ACCION;
+      delete baseFields.SEGUIMIENTO_MANUAL;
+    }
+    const lead = originalLead
+      ? await store.updateLead(originalLead.id, baseFields)
+      : await store.createLead({
+        NOMBRE: claim.answers.nombre, EMAIL: email, WHATSAPP: claim.answers.telefono,
+        ORIGEN: "ESTUDIO_V2", FECHA_INGRESO: claim.createdAt.slice(0, 10), VERSION: 1,
+        ...baseFields,
+      });
+    await store.linkClaim(claim, lead.id);
+
+    if (claim.status === "SENT") return { perfil: null, status: "EXISTING" };
+    if (claim.status === "HISTORICAL") return { perfil: null, status: "EXISTING" };
+    if (claim.status === "REVIEW") return { perfil: claim.perfil, status: "REVIEW" };
+    if (!claim.automation) return { perfil: claim.perfil, status: "REVIEW" };
+    let contactId: string;
+    try {
+      const contact = await campaign.syncContact(claim.answers);
+      contactId = contact.id;
+      await store.updateLead(lead.id, { AC_CONTACT_ID: contact.id, AC_SYNC_STATUS: "CONTACTO_CREADO" });
+      await campaign.startStudyAutomation(contact.id, claim.automation);
+    } catch {
+      claim = { ...claim, status: "ERROR" };
+      await store.updateClaim(claim);
+      await store.updateLead(lead.id, { AC_SYNC_STATUS: "ERROR", PROXIMA_ACCION: "Revisar envío de resultado por correo" });
+      return { perfil: null, status: "ERROR" };
+    }
+    claim = { ...claim, status: "SENT" };
+    await store.updateClaim(claim);
+    await store.updateLead(lead.id, { AC_CONTACT_ID: contactId, AC_SYNC_STATUS: "SENT" });
+    return { perfil: claim.perfil, status: "SENT" };
+  };
+}
