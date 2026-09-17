@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import logoClaro from "@/logo_tvm.png";
+import { logout } from "@/app/acceso/actions";
 const links = [
   ["/", "Hoy"],
   ["/leads", "Leads"],
@@ -12,9 +13,9 @@ const links = [
   ["/mensajes", "Mensajes"],
   ["/configuracion", "Configuración"],
 ];
-export function CrmShell({ children }: { children: ReactNode }) {
+export function CrmShell({ children, authEnabled }: { children: ReactNode; authEnabled: boolean }) {
   const pathname = usePathname();
-  if (pathname === "/estudio") return <>{children}</>;
+  if (pathname === "/estudio" || pathname === "/acceso") return <>{children}</>;
   return (
     <div className="shell">
       <aside className="sidebar">
@@ -37,14 +38,18 @@ export function CrmShell({ children }: { children: ReactNode }) {
           ))}
         </nav>
         <div className="sidebar-note">
-          Asesor principal
+          {authEnabled ? "Sesión privada" : "Asesor principal"}
           <br />
           V2 · demostración
           <br />
           Cambios guardados en esta pestaña.
+          {authEnabled && <form action={logout}>
+            <button type="submit" className="logout-button">Cerrar sesión</button>
+          </form>}
         </div>
       </aside>
       <main className="content">{children}</main>
     </div>
   );
 }
+

@@ -1,4 +1,7 @@
 import { CrmView } from "@/components/crm-views";
-export default function Home() {
+import { requireCrmUser } from "@/lib/crm-access";
+export default async function Home() {
+  await requireCrmUser();
   return <CrmView view="hoy" />;
 }
+
