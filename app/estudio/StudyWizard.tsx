@@ -110,6 +110,7 @@ export default function StudyWizard({ enabled }: { enabled: boolean }) {
                   </div>
                 )}
                 {error && <p className="study-error" role="alert">{error}</p>}
+                {busy && <p className="study-sending" role="status">Estamos guardando tu Estudio de Perfil y preparando el correo. Puede tardar unos 30 segundos; mantén esta pantalla abierta.</p>}
                 <div className="study-actions">
                   {page > 0 ? <button className="study-back" type="button" onClick={() => { setPage(page - 1); window.scrollTo({ top: 0, behavior: "smooth" }); }}>← Volver</button> : <span />}
                   <button className="study-next" type="submit" disabled={!ready || busy}>{busy ? "Enviando…" : page === TOTAL_PAGES - 1 ? enabled ? "Enviar respuestas" : "Ver resultado de prueba" : "Continuar"}<span aria-hidden="true">→</span></button>
@@ -131,3 +132,4 @@ export default function StudyWizard({ enabled }: { enabled: boolean }) {
     </main>
   );
 }
+

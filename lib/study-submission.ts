@@ -55,8 +55,8 @@ export function createStudySubmission(options: { store: Store; campaign: Campaig
   return async function submit(raw: unknown): Promise<SubmissionResult> {
     const answers = validateStudyAnswers(raw);
     const email = answers.email!;
-    const currentLead = await store.findLead(email);
-    let claim = await store.findClaim(email);
+    const [currentLead, firstClaim] = await Promise.all([store.findLead(email), store.findClaim(email)]);
+    let claim = firstClaim;
     const recovering = Boolean(claim);
     if (!claim && currentLead?.PRIMER_ESTUDIO_ID && currentLead.PERFIL_ESTUDIO) {
       return { perfil: null, status: "EXISTING" };
@@ -127,7 +127,6 @@ export function createStudySubmission(options: { store: Store; campaign: Campaig
     try {
       const contact = await campaign.syncContact(claim.answers);
       contactId = contact.id;
-      await store.updateLead(lead.id, { AC_CONTACT_ID: contact.id, AC_SYNC_STATUS: "CONTACTO_CREADO" });
       await campaign.startStudyAutomation(contact.id, claim.automation);
     } catch {
       claim = { ...claim, status: "ERROR" };
@@ -136,8 +135,11 @@ export function createStudySubmission(options: { store: Store; campaign: Campaig
       return { perfil: null, status: "ERROR" };
     }
     claim = { ...claim, status: "SENT" };
-    await store.updateClaim(claim);
-    await store.updateLead(lead.id, { AC_CONTACT_ID: contactId, AC_SYNC_STATUS: "SENT" });
+    await Promise.all([
+      store.updateClaim(claim),
+      store.updateLead(lead.id, { AC_CONTACT_ID: contactId, AC_SYNC_STATUS: "SENT" }),
+    ]);
     return { perfil: claim.perfil, status: "SENT" };
   };
 }
+
