@@ -280,17 +280,16 @@ export function CrmView({ view }: { view: string }) {
           {realData && data.mensajes.length === 0 && (
             <p className="empty-state">La tabla MENSAJES de Baserow está vacía. Todavía no hay textos de WhatsApp asignados ni envíos para confirmar.</p>
           )}
-          <p className="empty-state">
-            Mensajes establecidos para difusión, sin variable de nombre. Se
-            separan en SIN ESTUDIO y ESTUDIO A/B/C. Los cambios no alteran el
-            historial ni fechas ya programadas.
-          </p>
+          {(!realData || data.mensajes.length > 0) && <p className="empty-state">
+            Mensajes de difusión sin variable de nombre, separados en SIN ESTUDIO
+            y ESTUDIO A/B/C. Los cambios no alteran el historial ya registrado.
+          </p>}
           <div className="review-summary">
-            <strong>Falta una secuencia para el estudio pago.</strong>
+            <strong>Estudio de Perfil gratuito y pago</strong>
             <p>
-              Los mensajes SIN ESTUDIO ofrecen únicamente el estudio gratuito en
-              línea. Los mensajes A/B/C no distinguen si el estudio previo fue
-              gratuito o pago.
+              La secuencia SIN ESTUDIO conduce al estudio gratuito en línea. El
+              estudio pago se ofrece personalmente cuando un lead quiere hacerlo
+              con un asesor; no activa una secuencia automática propia.
             </p>
           </div>
           <div className="filters">
