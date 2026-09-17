@@ -460,23 +460,40 @@
     "texto": "¡Hola! Soy Augusto Vargas de *Tu Visa Mundo*. Recientemente te registraste en nuestro sitio web por tu interés en solicitar la *visa de turismo a Canadá* 🇨🇦.\n\nHemos ayudado a cientos de viajeros como tú a obtener su visa, incluso en casos que parecían complicados.\n\nIndícanos por favor *cuántos planean aplicar a la visa y qué relación tienen* (Pareja, padres e hijos, amigos, etc.)"
   },
   {
-    "id": "estudio-canada-2-ab",
+    "id": "estudio-canada-2-a",
     "secuenciaId": "estudio-canada",
     "segmento": [
-      "ESTUDIO_A",
-      "ESTUDIO_B"
+      "ESTUDIO_A"
     ],
     "destino": "Canadá",
     "orden": 2,
     "diaSecuencia": 2,
-    "titulo": "Resultado Alto / Medio-Alto",
+    "titulo": "Resultado Alto",
     "recursoTipo": "YOUTUBE",
     "recursoUrl": "https://youtu.be/oxR66LehHlc",
     "soloDiasHabiles": true,
     "borrador": false,
     "requiereRevision": false,
     "observaciones": [],
-    "texto": "¡Hola! Quería recordarte que tu perfil califica como *Alto* / *Medio-Alto*, lo que significa que tienes excelentes probabilidades de aprobación para tu visa.\n\nPara que veas lo simple que es el siguiente paso, aquí te dejo un video corto que explica exactamente cómo iniciamos el proceso: https://youtu.be/oxR66LehHlc"
+    "texto": "¡Hola! Quería recordarte que tu perfil califica como *Alto*, lo que significa que tienes excelentes probabilidades de aprobación para tu visa.\n\nPara que veas lo simple que es el siguiente paso, aquí te dejo un video corto que explica exactamente cómo iniciamos el proceso: https://youtu.be/oxR66LehHlc"
+  },
+  {
+    "id": "estudio-canada-2-b",
+    "secuenciaId": "estudio-canada",
+    "segmento": [
+      "ESTUDIO_B"
+    ],
+    "destino": "Canadá",
+    "orden": 2,
+    "diaSecuencia": 2,
+    "titulo": "Resultado Medio Alto",
+    "recursoTipo": "YOUTUBE",
+    "recursoUrl": "https://youtu.be/oxR66LehHlc",
+    "soloDiasHabiles": true,
+    "borrador": false,
+    "requiereRevision": false,
+    "observaciones": [],
+    "texto": "¡Hola! Quería recordarte que tu perfil califica como *Medio Alto*, lo que significa que tienes excelentes probabilidades de aprobación para tu visa.\n\nPara que veas lo simple que es el siguiente paso, aquí te dejo un video corto que explica exactamente cómo iniciamos el proceso: https://youtu.be/oxR66LehHlc"
   },
   {
     "id": "estudio-canada-2-c",
