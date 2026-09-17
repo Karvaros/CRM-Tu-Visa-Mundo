@@ -59,6 +59,9 @@ export function CrmView({ view }: { view: string }) {
   const [messageSequence, setMessageSequence] = useState("");
   const [reviewOnly, setReviewOnly] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
+  const [recoverContact, setRecoverContact] = useState("");
+  const [recoverForm, setRecoverForm] = useState("1");
+  const [recoveryNotice, setRecoveryNotice] = useState("");
   if (!data) return <p role="status">Cargando CRM…</p>;
   const destinations = [
     ...mainDestinations,
@@ -361,6 +364,39 @@ export function CrmView({ view }: { view: string }) {
               else window.alert("No se pudieron cargar los mensajes. Revisa los permisos de Baserow.");
             }}
           >Cargar mensajes establecidos en Baserow</button>}
+          {realData && data.mensajes.length > 0 && <button
+            className="button button--secondary"
+            disabled={busy}
+            onClick={async () => {
+              const response = await fetch("/api/crm/messages/assign", { method: "POST" });
+              if (response.ok) window.location.reload();
+              else window.alert("No se pudieron asignar los mensajes pendientes.");
+            }}
+          >Asignar resultado a estudios anteriores de Canadá</button>}
+          {realData && <form onSubmit={async (event) => {
+            event.preventDefault();
+            setRecoveryNotice("Sincronizando inscripción…");
+            const response = await fetch("/api/crm/forms/recover", {
+              method: "POST", headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ contactId: recoverContact, formId: recoverForm }),
+            });
+            if (response.ok) window.location.reload();
+            else setRecoveryNotice("No se pudo recuperar la inscripción. Comprueba el ID y el destino.");
+          }}>
+            <h3>Recuperar una inscripción anterior</h3>
+            <p>Para formularios recibidos antes de activar la conexión con ActiveCampaign.</p>
+            <label>ID del contacto en ActiveCampaign
+              <input value={recoverContact} onChange={(event) => setRecoverContact(event.target.value)} required pattern="[0-9]+" />
+            </label>
+            <label>Formulario
+              <select value={recoverForm} onChange={(event) => setRecoverForm(event.target.value)}>
+                <option value="1">Canadá / Australia / Reino Unido</option>
+                <option value="3">Estados Unidos</option>
+              </select>
+            </label>
+            <button className="button button--secondary" type="submit">Recuperar inscripción</button>
+            {recoveryNotice && <p role="status">{recoveryNotice}</p>}
+          </form>}
           {!realData && <button
             className="button button--secondary"
             disabled={busy}
