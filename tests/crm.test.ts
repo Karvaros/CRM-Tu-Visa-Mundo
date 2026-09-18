@@ -164,7 +164,7 @@ test("repositorio persiste cambios y plantillas sin reescribir historial", async
 });
 test("mensajes de difusión no incluyen variables de nombre y mantienen segmentos", () => {
   const data = seed();
-  assert.equal(data.mensajes.length, 33);
+  assert.equal(data.mensajes.length, 45);
   assert.equal(
     data.mensajes.some((message) => /\{\{?nombre\}?\}/i.test(message.texto)),
     false,
@@ -200,6 +200,20 @@ test("la secuencia A/B y la C convergen después del mensaje de resultado", () =
   };
   const medio = applyCommand(medioData, sent(medioData, 2), now, "event-c");
   assert.equal(medio.leads[2].proximoMensajeId, "estudio-canada-3");
+});
+test("no repite testimonios si ya se enviaron en SIN ESTUDIO", () => {
+  const data = seed();
+  const lead = data.leads[2];
+  lead.proximoContacto = "2026-09-14";
+  data.interacciones.push({
+    id: "prior-whatsapp", leadId: lead.id, tipo: "ENVIADO",
+    fecha: "2026-09-12T15:00:00Z", detalle: "Testimonios enviados",
+    mensajeId: "sin-estudio-canada-4",
+  });
+  const result = applyCommand(data, sent(data, 2), now, "result-sent");
+  assert.equal(result.leads[2].proximoMensajeId, "estudio-canada-4");
+  assert.equal(result.leads[2].proximoContacto, "2026-10-02");
+  assert.equal(result.mensajes.find((item) => item.id === "estudio-canada-4")?.requiereRevision, true);
 });
 test("mensajes pendientes o personalizados no pueden aprobarse ni enviarse", async () => {
   const data = seed();

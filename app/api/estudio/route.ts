@@ -3,6 +3,7 @@ import { createStudyStore } from "@/lib/study-store";
 import { createStudySubmission } from "@/lib/study-submission";
 import { studyAutomations, studyFields, studyTableIds } from "@/lib/study-config";
 import { createConfiguredBaserowReader } from "@/lib/baserow-server";
+import { firstStudyMessage } from "@/lib/message-sequences";
 import { publicRateLimited } from "@/lib/public-rate-limit";
 
 export const runtime = "nodejs";
@@ -45,11 +46,8 @@ export async function POST(request: Request) {
     });
     const submit = createStudySubmission({ store, campaign,
       async selectWhatsApp(destination, profile) {
-        // Solo Canadá tiene textos posestudio aprobados en este momento.
-        if (!/^(Canadá|Canada)$/i.test(destination) || !["A", "B", "C"].includes(profile)) return undefined;
         const data = await createConfiguredBaserowReader().load();
-        return data.mensajes.find((message) => message.secuenciaId === "estudio-canada" &&
-          message.orden === 2 && message.segmento.includes(`ESTUDIO_${profile}` as "ESTUDIO_A" | "ESTUDIO_B" | "ESTUDIO_C"));
+        return firstStudyMessage(data.mensajes, destination, profile);
       },
     });
     const result = await submit(payload);

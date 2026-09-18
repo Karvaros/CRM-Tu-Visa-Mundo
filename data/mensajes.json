@@ -617,5 +617,227 @@
       "El archivo menciona BENEFICIOS DEL PLAN BASIC (Video), pero no incluye texto ni enlace para ese contenido."
     ],
     "texto": "Hola, ¿Cómo vas?\n\nMuchos de nuestros clientes con perfiles excelentes como el tuyo, buscan la forma más inteligente de invertir en su trámite: quieren la máxima seguridad sin pagar por servicios que quizás no necesitan.\n\nPrecisamente por eso, creé una página que compara lado a lado nuestro *Servicio Premium* y nuestro *Servicio Basic*.\n\nTe invito a que la revises. Podrás ver exactamente qué incluye cada uno y cómo puedes *ahorrar hasta un 35%* eligiendo el plan que mejor se adapta a ti.\n\nhttps://www.tuvisamundo.com/elige-tu-plan/\n\nAvísame qué te parece o si te surge alguna duda al verla. ¡Saludos!"
+  },
+  {
+    "id": "estudio-australia-2-a",
+    "secuenciaId": "estudio-australia",
+    "segmento": [
+      "ESTUDIO_A"
+    ],
+    "destino": "Australia",
+    "orden": 2,
+    "diaSecuencia": 2,
+    "titulo": "Resultado Alto",
+    "recursoTipo": "YOUTUBE",
+    "recursoUrl": "https://youtu.be/oxR66LehHlc",
+    "soloDiasHabiles": true,
+    "borrador": false,
+    "requiereRevision": false,
+    "observaciones": [],
+    "texto": "¡Hola! Quería recordarte que tu perfil califica como *Alto*, lo que significa que tienes excelentes probabilidades de aprobación para tu visa.\n\nPara que veas lo simple que es el siguiente paso, aquí te dejo un video corto que explica exactamente cómo iniciamos el proceso: https://youtu.be/oxR66LehHlc"
+  },
+  {
+    "id": "estudio-australia-2-b",
+    "secuenciaId": "estudio-australia",
+    "segmento": [
+      "ESTUDIO_B"
+    ],
+    "destino": "Australia",
+    "orden": 2,
+    "diaSecuencia": 2,
+    "titulo": "Resultado Medio Alto",
+    "recursoTipo": "YOUTUBE",
+    "recursoUrl": "https://youtu.be/oxR66LehHlc",
+    "soloDiasHabiles": true,
+    "borrador": false,
+    "requiereRevision": false,
+    "observaciones": [],
+    "texto": "¡Hola! Quería recordarte que tu perfil califica como *Medio Alto*, lo que significa que tienes excelentes probabilidades de aprobación para tu visa.\n\nPara que veas lo simple que es el siguiente paso, aquí te dejo un video corto que explica exactamente cómo iniciamos el proceso: https://youtu.be/oxR66LehHlc"
+  },
+  {
+    "id": "estudio-australia-2-c",
+    "secuenciaId": "estudio-australia",
+    "segmento": [
+      "ESTUDIO_C"
+    ],
+    "destino": "Australia",
+    "orden": 2,
+    "diaSecuencia": 2,
+    "titulo": "Resultado Medio",
+    "recursoTipo": "YOUTUBE",
+    "recursoUrl": "https://youtu.be/oxR66LehHlc",
+    "soloDiasHabiles": true,
+    "borrador": false,
+    "requiereRevision": false,
+    "observaciones": [],
+    "texto": "¡Hola! Quería recordarte que tu perfil califica como *Medio*. Esto significa que es un perfil con potencial que, con nuestra asesoría, podemos trabajar para hacerlo mucho más robusto.\n\nPara que veas cómo funciona, aquí te dejo un video corto que explica nuestro proceso de trabajo: https://youtu.be/oxR66LehHlc"
+  },
+  {
+    "id": "estudio-australia-3",
+    "secuenciaId": "estudio-australia",
+    "segmento": [
+      "ESTUDIO_A",
+      "ESTUDIO_B",
+      "ESTUDIO_C"
+    ],
+    "destino": "Australia",
+    "orden": 3,
+    "diaSecuencia": 8,
+    "titulo": "Testimonios",
+    "recursoTipo": "WEB",
+    "soloDiasHabiles": true,
+    "borrador": false,
+    "requiereRevision": false,
+    "observaciones": [],
+    "texto": "Hola ¿cómo estás?, sé que elegir una agencia es una decisión de confianza. Por eso, en lugar de contarte yo lo bueno que es nuestro servicio, prefiero que lo veas a través de los ojos de otros clientes.\n\nTe invito a ver algunas de sus experiencias aquí: https://www.tuvisamundo.com/testimonios/",
+    "recursoUrl": "https://www.tuvisamundo.com/testimonios/"
+  },
+  {
+    "id": "estudio-eeuu-2-a",
+    "secuenciaId": "estudio-eeuu",
+    "segmento": [
+      "ESTUDIO_A"
+    ],
+    "destino": "Estados Unidos",
+    "orden": 2,
+    "diaSecuencia": 2,
+    "titulo": "Resultado Alto",
+    "recursoTipo": "YOUTUBE",
+    "recursoUrl": "https://youtu.be/oxR66LehHlc",
+    "soloDiasHabiles": true,
+    "borrador": false,
+    "requiereRevision": false,
+    "observaciones": [],
+    "texto": "¡Hola! Quería recordarte que tu perfil califica como *Alto*, lo que significa que tienes excelentes probabilidades de aprobación para tu visa.\n\nPara que veas lo simple que es el siguiente paso, aquí te dejo un video corto que explica exactamente cómo iniciamos el proceso: https://youtu.be/oxR66LehHlc"
+  },
+  {
+    "id": "estudio-eeuu-2-b",
+    "secuenciaId": "estudio-eeuu",
+    "segmento": [
+      "ESTUDIO_B"
+    ],
+    "destino": "Estados Unidos",
+    "orden": 2,
+    "diaSecuencia": 2,
+    "titulo": "Resultado Medio Alto",
+    "recursoTipo": "YOUTUBE",
+    "recursoUrl": "https://youtu.be/oxR66LehHlc",
+    "soloDiasHabiles": true,
+    "borrador": false,
+    "requiereRevision": false,
+    "observaciones": [],
+    "texto": "¡Hola! Quería recordarte que tu perfil califica como *Medio Alto*, lo que significa que tienes excelentes probabilidades de aprobación para tu visa.\n\nPara que veas lo simple que es el siguiente paso, aquí te dejo un video corto que explica exactamente cómo iniciamos el proceso: https://youtu.be/oxR66LehHlc"
+  },
+  {
+    "id": "estudio-eeuu-2-c",
+    "secuenciaId": "estudio-eeuu",
+    "segmento": [
+      "ESTUDIO_C"
+    ],
+    "destino": "Estados Unidos",
+    "orden": 2,
+    "diaSecuencia": 2,
+    "titulo": "Resultado Medio",
+    "recursoTipo": "YOUTUBE",
+    "recursoUrl": "https://youtu.be/oxR66LehHlc",
+    "soloDiasHabiles": true,
+    "borrador": false,
+    "requiereRevision": false,
+    "observaciones": [],
+    "texto": "¡Hola! Quería recordarte que tu perfil califica como *Medio*. Esto significa que es un perfil con potencial que, con nuestra asesoría, podemos trabajar para hacerlo mucho más robusto.\n\nPara que veas cómo funciona, aquí te dejo un video corto que explica nuestro proceso de trabajo: https://youtu.be/oxR66LehHlc"
+  },
+  {
+    "id": "estudio-eeuu-3",
+    "secuenciaId": "estudio-eeuu",
+    "segmento": [
+      "ESTUDIO_A",
+      "ESTUDIO_B",
+      "ESTUDIO_C"
+    ],
+    "destino": "Estados Unidos",
+    "orden": 3,
+    "diaSecuencia": 8,
+    "titulo": "Testimonios",
+    "recursoTipo": "WEB",
+    "soloDiasHabiles": true,
+    "borrador": false,
+    "requiereRevision": false,
+    "observaciones": [],
+    "texto": "Hola ¿cómo estás?, sé que elegir una agencia es una decisión de confianza. Por eso, en lugar de contarte yo lo bueno que es nuestro servicio, prefiero que lo veas a través de los ojos de otros clientes.\n\nTe invito a ver algunas de sus experiencias aquí: https://www.tuvisamundo.com/testimonios/",
+    "recursoUrl": "https://www.tuvisamundo.com/testimonios/"
+  },
+  {
+    "id": "estudio-uk-2-a",
+    "secuenciaId": "estudio-uk",
+    "segmento": [
+      "ESTUDIO_A"
+    ],
+    "destino": "Reino Unido",
+    "orden": 2,
+    "diaSecuencia": 2,
+    "titulo": "Resultado Alto",
+    "recursoTipo": "YOUTUBE",
+    "recursoUrl": "https://youtu.be/oxR66LehHlc",
+    "soloDiasHabiles": true,
+    "borrador": false,
+    "requiereRevision": false,
+    "observaciones": [],
+    "texto": "¡Hola! Quería recordarte que tu perfil califica como *Alto*, lo que significa que tienes excelentes probabilidades de aprobación para tu visa.\n\nPara que veas lo simple que es el siguiente paso, aquí te dejo un video corto que explica exactamente cómo iniciamos el proceso: https://youtu.be/oxR66LehHlc"
+  },
+  {
+    "id": "estudio-uk-2-b",
+    "secuenciaId": "estudio-uk",
+    "segmento": [
+      "ESTUDIO_B"
+    ],
+    "destino": "Reino Unido",
+    "orden": 2,
+    "diaSecuencia": 2,
+    "titulo": "Resultado Medio Alto",
+    "recursoTipo": "YOUTUBE",
+    "recursoUrl": "https://youtu.be/oxR66LehHlc",
+    "soloDiasHabiles": true,
+    "borrador": false,
+    "requiereRevision": false,
+    "observaciones": [],
+    "texto": "¡Hola! Quería recordarte que tu perfil califica como *Medio Alto*, lo que significa que tienes excelentes probabilidades de aprobación para tu visa.\n\nPara que veas lo simple que es el siguiente paso, aquí te dejo un video corto que explica exactamente cómo iniciamos el proceso: https://youtu.be/oxR66LehHlc"
+  },
+  {
+    "id": "estudio-uk-2-c",
+    "secuenciaId": "estudio-uk",
+    "segmento": [
+      "ESTUDIO_C"
+    ],
+    "destino": "Reino Unido",
+    "orden": 2,
+    "diaSecuencia": 2,
+    "titulo": "Resultado Medio",
+    "recursoTipo": "YOUTUBE",
+    "recursoUrl": "https://youtu.be/oxR66LehHlc",
+    "soloDiasHabiles": true,
+    "borrador": false,
+    "requiereRevision": false,
+    "observaciones": [],
+    "texto": "¡Hola! Quería recordarte que tu perfil califica como *Medio*. Esto significa que es un perfil con potencial que, con nuestra asesoría, podemos trabajar para hacerlo mucho más robusto.\n\nPara que veas cómo funciona, aquí te dejo un video corto que explica nuestro proceso de trabajo: https://youtu.be/oxR66LehHlc"
+  },
+  {
+    "id": "estudio-uk-3",
+    "secuenciaId": "estudio-uk",
+    "segmento": [
+      "ESTUDIO_A",
+      "ESTUDIO_B",
+      "ESTUDIO_C"
+    ],
+    "destino": "Reino Unido",
+    "orden": 3,
+    "diaSecuencia": 8,
+    "titulo": "Testimonios",
+    "recursoTipo": "WEB",
+    "soloDiasHabiles": true,
+    "borrador": false,
+    "requiereRevision": false,
+    "observaciones": [],
+    "texto": "Hola ¿cómo estás?, sé que elegir una agencia es una decisión de confianza. Por eso, en lugar de contarte yo lo bueno que es nuestro servicio, prefiero que lo veas a través de los ojos de otros clientes.\n\nTe invito a ver algunas de sus experiencias aquí: https://www.tuvisamundo.com/testimonios/",
+    "recursoUrl": "https://www.tuvisamundo.com/testimonios/"
   }
 ]

@@ -4,7 +4,7 @@ Este documento reúne las decisiones y recursos que todavía faltan. Los mensaje
 
 ## Estado revisado el 18 de septiembre de 2026
 
-La semilla contiene 24 mensajes SIN ESTUDIO (seis por cada destino: Canadá, Australia, Estados Unidos y Reino Unido) y ocho entradas ESTUDIO para Canadá, incluida una variante de resultado para cada perfil A/B/C. No hay todavía mensajes posestudio específicos para Australia, Estados Unidos ni Reino Unido. Esos leads permanecen en atención manual; no se les debe asignar el texto de Canadá.
+MENSAJES contiene 45 plantillas: 24 SIN ESTUDIO (seis por destino), nueve ESTUDIO de Canadá y cuatro para cada uno de Australia, Estados Unidos y Reino Unido. Con aprobación del propietario se reutilizaron los textos genéricos A/B/C de resultado y testimonios, cada uno en una secuencia propia del destino. Los resultados apuntan al video general del trámite; testimonios apunta a la página de Tu Visa Mundo. Para cada destino, el estudio A/B/C selecciona el mensaje de resultado de orden 2 y, tras confirmar su envío por WhatsApp, el CRM programa testimonios de orden 3 desde la fecha real de ese envío. El perfil D no tiene secuencia comercial.
 
 En Canadá siguen bloqueados para revisión la bienvenida posestudio, el Reel de tres errores, la oferta del 25 %, el caso de Ana y su hija y la comparación Basic/Premium. El artículo de Perfil para Reino Unido también sigue bloqueado hasta confirmar su URL. Los demás enlaces ya registrados no deben confundirse con estos recursos faltantes.
 
@@ -44,10 +44,10 @@ La bienvenida del grupo ESTUDIO no debe repetirse cuando el lead ya recorrió SI
 
 - ActiveCampaign envía el resultado del estudio por correo; ese correo no cuenta como WhatsApp enviado. El CRM entra por el mensaje 2: Alto para A, Medio Alto para B o Medio para C.
 - Solo si existe una confirmación de envío del resultado por WhatsApp en INTERACCIONES, el CRM entra por el mensaje 3.
-- Después se omiten los hitos que ya haya recibido el lead dentro de SIN ESTUDIO.
+- Si ya se confirmó el envío de testimonios en SIN ESTUDIO, se omite el mismo hito en ESTUDIO.
 - La primera respuesta válida fija la clasificación del lead. Un estudio posterior se registra como repetido, pero no cambia A/B/C, no reinicia la secuencia y no vuelve a enviar el resultado.
 
-Falta definir la tabla exacta de equivalencias entre los mensajes posteriores de ambas secuencias y probar la continuidad para leads con WhatsApp previos confirmados. No se infiere un envío de WhatsApp a partir de un correo de ActiveCampaign, de abrir WhatsApp ni de copiar el texto.
+La equivalencia de otros hitos futuros entre SIN ESTUDIO y ESTUDIO sigue pendiente. No se infiere un envío de WhatsApp a partir de un correo de ActiveCampaign, de abrir WhatsApp ni de copiar el texto. Los estudios de Australia, Estados Unidos y Reino Unido registrados antes de esta asignación deben revisarse individualmente antes de incorporarlos a la secuencia: algunos están en atención manual y no se debe sobrescribir una decisión del asesor.
 
 ## Correcciones resueltas
 
@@ -57,4 +57,3 @@ Falta definir la tabla exacta de equivalencias entre los mensajes posteriores de
 - Página de trámite de Estados Unidos corregida.
 - Página de trámite de Reino Unido corregida.
 - Página de testimonios agregada a la secuencia ESTUDIO.
-

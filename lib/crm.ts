@@ -28,12 +28,20 @@ export function renderMessage(
   return message?.texto ?? "";
 }
 function nextMessage(data: CrmData, lead: Lead, current: Message) {
+  const sourceSequence = lead.secuenciaId.startsWith("estudio-")
+    ? `sin-${lead.secuenciaId}` : "";
+  const testimonialAlreadySent = data.interacciones.some((interaction) => {
+    if (interaction.leadId !== lead.id || interaction.tipo !== "ENVIADO" || !interaction.mensajeId) return false;
+    const sent = data.mensajes.find((item) => item.id === interaction.mensajeId);
+    return sent?.secuenciaId === sourceSequence && sent.orden === 4;
+  });
   return data.mensajes
     .filter(
       (item) =>
         item.secuenciaId === lead.secuenciaId &&
         item.orden > current.orden &&
-        item.segmento.includes(lead.segmento),
+        item.segmento.includes(lead.segmento) &&
+        !(sourceSequence && item.orden === 3 && testimonialAlreadySent),
     )
     .sort((a, b) => a.orden - b.orden)[0];
 }

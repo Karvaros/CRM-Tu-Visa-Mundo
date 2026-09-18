@@ -5,9 +5,9 @@ type SourceMessage = Omit<Message, "observaciones"> & { observaciones: string[] 
 
 export function missingMessageRows(existing: Message[]) {
   const keys = new Set(existing.map((message) =>
-    `${message.secuenciaId}|${message.orden}|${message.segmento.join(",")}|${message.titulo}`));
+    `${message.secuenciaId}|${message.orden}|${message.segmento.join(",")}|${message.destino}`));
   return (messages as SourceMessage[])
-    .filter((message) => !keys.has(`${message.secuenciaId}|${message.orden}|${message.segmento.join(",")}|${message.titulo}`))
+    .filter((message) => !keys.has(`${message.secuenciaId}|${message.orden}|${message.segmento.join(",")}|${message.destino}`))
     .map((message) => ({
       TITULO: message.titulo, TEXTO: message.texto,
       SECUENCIA_ID: message.secuenciaId, SEGMENTOS: message.segmento.join(", "),
