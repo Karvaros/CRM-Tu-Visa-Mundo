@@ -65,7 +65,11 @@ export function createStudySubmission(options: {
     const [currentLead, firstClaim] = await Promise.all([store.findLead(email), store.findClaim(email)]);
     let claim = firstClaim;
     const recovering = Boolean(claim);
-    if (!claim && currentLead?.PRIMER_ESTUDIO_ID && currentLead.PERFIL_ESTUDIO) {
+    if (!claim && currentLead?.PRIMER_ESTUDIO_ID) {
+      return { perfil: null, status: "EXISTING" };
+    }
+    if (claim && currentLead?.PRIMER_ESTUDIO_ID === claim.id &&
+      ["SENT", "HISTORICAL", "REVIEW"].includes(claim.status)) {
       return { perfil: null, status: "EXISTING" };
     }
     if (claim?.status === "PROCESSING" && now().getTime() - new Date(claim.createdAt).getTime() < 120_000) {
