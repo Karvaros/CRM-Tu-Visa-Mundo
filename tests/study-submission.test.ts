@@ -85,9 +85,14 @@ test("guarda la primera clasificación y dispara solo su automatización de Acti
   assert.equal(contact?.fieldValues.find((item) => item.field === String(fields.destino))?.value, "Canadá");
   assert.equal(Object.hasOwn(contact ?? {}, "form"), false);
 
+  Object.assign(leads[0], {
+    ESTADO: "SEGUIMIENTO", SECUENCIA_ID: "en-curso", PROXIMO_MENSAJE: [42],
+    PROXIMA_ACCION: "Contactar el martes", SECUENCIA_PAUSADA: false, VERSION: 7,
+  });
+  const leadBeforeRepeat = structuredClone(leads[0]);
   const repeated = await submit({ ...answers, solicitud: "Primera vez", pasaportes: studyOptions.pasaportes[2] });
   assert.deepEqual(repeated, { perfil: null, status: "EXISTING" });
-  assert.equal(leads[0].PERFIL_ESTUDIO, "A");
+  assert.deepEqual(leads[0], leadBeforeRepeat);
   assert.equal(interactions.length, 1);
   assert.deepEqual(startedAutomations, [301]);
 });
