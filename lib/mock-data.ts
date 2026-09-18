@@ -66,7 +66,7 @@ export function createMockData(date: string): CrmData {
         ultimoContacto: `${addDays(date, -3)}T15:00:00Z`,
         ultimoMensajeId: "estudio-canada-1",
         proximaAccion: "Enviar resultado del estudio de perfil",
-        proximoMensajeId: "estudio-canada-2-ab",
+        proximoMensajeId: "estudio-canada-2-a",
       },
       {
         ...base,

@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { classifyStudy, presentStudyQuestion, studyOptions, studyPages, updateStudyAnswer, type StudyAnswers } from "../lib/study";
+import { presentStudyQuestion, studyOptions, studyPages, updateStudyAnswer, type StudyAnswers } from "../lib/study";
+import { classifyStudy } from "../lib/study-scoring";
 
 const base: StudyAnswers = {
   destino: studyOptions.destino[0],

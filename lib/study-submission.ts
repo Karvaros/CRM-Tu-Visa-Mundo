@@ -1,4 +1,5 @@
-import { classifyStudy, studyOptions, type StudyAnswers } from "./study";
+import { studyOptions, type StudyAnswers } from "./study";
+import { classifyStudy } from "./study-scoring";
 import type { StudyClaim, StoredProfile, createStudyStore } from "./study-store";
 import type { createActiveCampaign } from "./activecampaign";
 import type { Message } from "./types";

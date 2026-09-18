@@ -3,10 +3,16 @@ import { createStudyStore } from "@/lib/study-store";
 import { createStudySubmission } from "@/lib/study-submission";
 import { studyAutomations, studyFields, studyTableIds } from "@/lib/study-config";
 import { createConfiguredBaserowReader } from "@/lib/baserow-server";
+import { publicRateLimited } from "@/lib/public-rate-limit";
 
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
+  if (await publicRateLimited("study", request.headers)) {
+    return Response.json({ error: "No pudimos procesar tu estudio en este momento. Inténtalo más tarde." }, {
+      status: 429, headers: { "Cache-Control": "no-store" },
+    });
+  }
   if (process.env.STUDY_SUBMISSION_ENABLED !== "true") {
     return Response.json({ error: "El envío del estudio aún no está disponible." }, { status: 503 });
   }

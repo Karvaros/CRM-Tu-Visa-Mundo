@@ -2,12 +2,12 @@
 
 import { useState } from "react";
 import studyResultCopy from "@/data/study-result-copy.json";
-import { classifyStudy, presentStudyQuestion, studyPages, studyProfileLabels, updateStudyAnswer, type StudyAnswers, type StudyOutcome } from "@/lib/study";
+import { presentStudyQuestion, studyPages, studyProfileLabels, updateStudyAnswer, type StudyAnswers, type StudyOutcome } from "@/lib/study";
 import "./study.css";
 
 const TOTAL_PAGES = studyPages.length + 1;
 
-type Result = { perfil: StudyOutcome["perfil"] | null; status: "PREVIEW" | "SENT" | "EXISTING" | "REVIEW" | "PROCESSING" | "ERROR" };
+type Result = { perfil: StudyOutcome["perfil"] | null; status: "SENT" | "EXISTING" | "REVIEW" | "PROCESSING" | "ERROR" };
 
 export default function StudyWizard({ enabled }: { enabled: boolean }) {
   const [page, setPage] = useState(0);
@@ -30,7 +30,7 @@ export default function StudyWizard({ enabled }: { enabled: boolean }) {
       return;
     }
     if (!enabled) {
-      setResult({ perfil: classifyStudy(answers).perfil, status: "PREVIEW" });
+      setError("El estudio no está disponible en este momento. Inténtalo más tarde.");
     } else {
       setBusy(true);
       setError("");
@@ -68,7 +68,7 @@ export default function StudyWizard({ enabled }: { enabled: boolean }) {
                 <div className="study-intro">
                   <span className="study-kicker">{questionPage?.title ?? "Tus datos"}</span>
                   <h1>{question?.label ?? "¿Dónde te enviamos el resultado?"}</h1>
-                  <p>{question?.subtitle ?? (enabled ? "Déjanos tus datos para enviarte el resultado. Solo se tendrá en cuenta tu primer Estudio de Perfil." : "Déjanos tus datos para identificar tu estudio. En esta vista de prueba no se guardan ni envían respuestas.")}</p>
+                  <p>{question?.subtitle ?? "Déjanos tus datos para enviarte el resultado. Solo se tendrá en cuenta tu primer Estudio de Perfil."}</p>
                 </div>
                 {question ? (
                   <div className="study-questions">
@@ -102,21 +102,20 @@ export default function StudyWizard({ enabled }: { enabled: boolean }) {
                     <label>Teléfono / WhatsApp *
                       <input autoComplete="tel" type="tel" minLength={8} required value={answers.telefono ?? ""} onChange={(event) => setAnswers((current) => ({ ...current, telefono: event.target.value }))} placeholder="Incluye el código de país" />
                     </label>
-                    {!enabled && <p className="study-preview-note">Vista de prueba: el resultado se calcula aquí, pero no se guarda en el CRM ni se envía por correo.</p>}
                   </div>
                 )}
                 {error && <p className="study-error" role="alert">{error}</p>}
                 {busy && <p className="study-sending" role="status">Estamos guardando tu Estudio de Perfil y preparando el correo. Puede tardar unos 30 segundos; mantén esta pantalla abierta.</p>}
                 <div className="study-actions">
                   {page > 0 ? <button className="study-back" type="button" onClick={() => { setPage(page - 1); window.scrollTo({ top: 0, behavior: "smooth" }); }}>← Volver</button> : <span />}
-                  <button className="study-next" type="submit" disabled={!ready || busy}>{busy ? "Enviando…" : page === TOTAL_PAGES - 1 ? enabled ? "Enviar respuestas" : "Ver resultado de prueba" : "Continuar"}<span aria-hidden="true">→</span></button>
+                  <button className="study-next" type="submit" disabled={!ready || busy}>{busy ? "Enviando…" : page === TOTAL_PAGES - 1 ? "Enviar respuestas" : "Continuar"}<span aria-hidden="true">→</span></button>
                 </div>
               </form>
             </>
           ) : (
             <div className="study-result">
               <span className="study-result__icon" aria-hidden="true">✓</span>
-              <span className="study-kicker">{result.status === "PREVIEW" ? "ESTUDIO COMPLETADO · SIMULACIÓN SIN ENVÍOS" : result.status === "SENT" ? "ESTUDIO COMPLETADO" : "ESTUDIO REGISTRADO"}</span>
+              <span className="study-kicker">{result.status === "SENT" ? "ESTUDIO COMPLETADO" : "ESTUDIO REGISTRADO"}</span>
               <h1>{result.perfil === "PENDIENTE" ? "Tu Estudio de Perfil requiere revisión" : result.perfil ? "Resultado de tu Estudio de Perfil" : "Ya recibimos tu Estudio de Perfil"}</h1>
               {result.perfil && result.perfil !== "PENDIENTE" && <p>Resultado: <strong>{studyProfileLabels[result.perfil]}</strong>.</p>}
               <p className="study-result__detail">{result.status === "EXISTING" ? "Este correo ya tiene un Estudio de Perfil anterior. Se conserva únicamente la primera clasificación; las respuestas nuevas no la cambian." : result.status === "PROCESSING" ? "Estamos terminando de registrar tu primer estudio. No necesitas enviarlo otra vez." : result.status === "ERROR" ? "Guardamos tu primera respuesta, pero el envío del correo está pendiente. Nuestro equipo podrá revisarlo sin que tengas que repetir el estudio." : result.perfil === "D" ? studyResultCopy.low : result.perfil === "PENDIENTE" ? studyResultCopy.pending : studyResultCopy.positive}</p>

@@ -10,6 +10,7 @@
     "test": "tsc -p tsconfig.test.json && node --test .test-build/tests/*.test.js"
   },
   "dependencies": {
+    "@vercel/firewall": "^1.2.5",
     "next": "^16.0.0",
     "next-auth": "^5.0.0-beta.32",
     "react": "^19.2.0",
@@ -25,4 +26,3 @@
     "node": ">=20"
   }
 }
-

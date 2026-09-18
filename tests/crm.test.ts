@@ -164,18 +164,22 @@ test("repositorio persiste cambios y plantillas sin reescribir historial", async
 });
 test("mensajes de difusión no incluyen variables de nombre y mantienen segmentos", () => {
   const data = seed();
-  assert.equal(data.mensajes.length, 32);
+  assert.equal(data.mensajes.length, 33);
   assert.equal(
     data.mensajes.some((message) => /\{\{?nombre\}?\}/i.test(message.texto)),
     false,
   );
   const alto = data.mensajes.find(
-    (message) => message.id === "estudio-canada-2-ab",
+    (message) => message.id === "estudio-canada-2-a",
+  )!;
+  const medioAlto = data.mensajes.find(
+    (message) => message.id === "estudio-canada-2-b",
   )!;
   const medio = data.mensajes.find(
     (message) => message.id === "estudio-canada-2-c",
   )!;
-  assert.deepEqual(alto.segmento, ["ESTUDIO_A", "ESTUDIO_B"]);
+  assert.deepEqual(alto.segmento, ["ESTUDIO_A"]);
+  assert.deepEqual(medioAlto.segmento, ["ESTUDIO_B"]);
   assert.deepEqual(medio.segmento, ["ESTUDIO_C"]);
   assert.equal(
     data.mensajes.filter((message) => message.requiereRevision).length,
