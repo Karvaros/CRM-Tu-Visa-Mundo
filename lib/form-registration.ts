@@ -52,13 +52,17 @@ export function createFormRegistration(options: {
   store: Store;
   readDestination: (contactId: string) => Promise<string | undefined>;
   findFirstMessage: (sequence: string) => Promise<number | undefined>;
+  keepClosed?: (email: string) => Promise<void>;
   now?: () => Date;
 }) {
-  const { store, readDestination, findFirstMessage, now = () => new Date() } = options;
+  const { store, readDestination, findFirstMessage, keepClosed, now = () => new Date() } = options;
   return async (registration: FormRegistration): Promise<"created" | "existing"> => {
     const existing = await store.findLead(registration.email);
     // A later form submission must never erase a study, a conversation or a closed lead.
-    if (existing) return "existing";
+    if (existing) {
+      if (existing.AC_SYNC_STATUS === "OPTED_OUT") await keepClosed?.(registration.email);
+      return "existing";
+    }
     const destination = registration.formId === "3"
       ? countryForForm("3")
       : countryForForm("1", registration.destination || await readDestination(registration.contactId));

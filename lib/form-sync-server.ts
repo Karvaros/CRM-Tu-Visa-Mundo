@@ -1,5 +1,6 @@
 import "server-only";
 import { createBaserowReader } from "./baserow";
+import { createActiveCampaignOptOut } from "./activecampaign-optout";
 import { createFormRegistration } from "./form-registration";
 import { createStudyStore } from "./study-store";
 import { baserowTables, studyTableIds } from "./study-config";
@@ -31,6 +32,10 @@ export function createConfiguredFormSync(registeredAt?: Date) {
         const message = data.mensajes.find((item) => item.secuenciaId === sequence && item.orden === 1 && item.segmento.includes("SIN_ESTUDIO"));
         return message ? Number(message.id) : undefined;
       },
+      keepClosed: (email) => createActiveCampaignOptOut({
+        apiUrl: process.env.ACTIVE_CAMPAIGN_API_URL ?? "",
+        apiKey: process.env.ACTIVE_CAMPAIGN_API_KEY ?? "",
+      }).stopMarketing(email),
       now: registeredAt ? () => registeredAt : undefined,
     }),
   };

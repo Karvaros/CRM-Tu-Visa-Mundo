@@ -6,7 +6,7 @@ import type { Message } from "./types";
 
 type Store = ReturnType<typeof createStudyStore>;
 type Campaign = ReturnType<typeof createActiveCampaign>;
-export type SubmissionResult = { perfil: StoredProfile | null; status: "SENT" | "EXISTING" | "REVIEW" | "PROCESSING" | "ERROR" };
+export type SubmissionResult = { perfil: StoredProfile | null; status: "SENT" | "EXISTING" | "REVIEW" | "PROCESSING" | "ERROR" | "CLOSED" };
 
 export function validateStudyAnswers(input: unknown): StudyAnswers {
   if (!input || typeof input !== "object" || Array.isArray(input)) throw new Error("Respuestas inválidas.");
@@ -64,13 +64,16 @@ export function createStudySubmission(options: {
     const answers = validateStudyAnswers(raw);
     const email = answers.email!;
     const [currentLead, firstClaim] = await Promise.all([store.findLead(email), store.findClaim(email)]);
+    const manuallyClosed = Boolean(currentLead && (currentLead.AC_SYNC_STATUS === "OPTED_OUT"
+      || currentLead.ESTADO === "INACTIVO"
+      || (currentLead.ESTADO === "NO_APTO" && !currentLead.PRIMER_ESTUDIO_ID && !firstClaim)));
     let claim = firstClaim;
     const recovering = Boolean(claim);
     if (!claim && currentLead?.PRIMER_ESTUDIO_ID) {
       return { perfil: null, status: "EXISTING" };
     }
     if (claim && currentLead?.PRIMER_ESTUDIO_ID === claim.id &&
-      ["SENT", "HISTORICAL", "REVIEW"].includes(claim.status)) {
+      ["SENT", "HISTORICAL", "REVIEW", "CLOSED"].includes(claim.status)) {
       return { perfil: null, status: "EXISTING" };
     }
     if (claim?.status === "PROCESSING" && now().getTime() - new Date(claim.createdAt).getTime() < 120_000) {
@@ -87,7 +90,7 @@ export function createStudySubmission(options: {
         id: uuid(), email, answers, perfil: profile,
         automation: historical?.automation ?? campaign.automationForOutcome(outcome),
         createdAt: historicalDate ?? now().toISOString(),
-        status: historical ? "HISTORICAL" : profile === "PENDIENTE" ? "REVIEW" : "PROCESSING",
+        status: historical ? "HISTORICAL" : manuallyClosed ? "CLOSED" : profile === "PENDIENTE" ? "REVIEW" : "PROCESSING",
         legacy: Boolean(historical),
         acContactId: historical ? contact?.id : undefined,
       };
@@ -121,6 +124,7 @@ export function createStudySubmission(options: {
       delete baseFields.PROXIMO_CONTACTO;
       baseFields.SECUENCIA_PAUSADA = true;
     }
+    if (manuallyClosed) delete baseFields.AC_SYNC_STATUS;
     const lead = originalLead
       ? await store.updateLead(originalLead.id, baseFields)
       : await store.createLead({
@@ -130,6 +134,14 @@ export function createStudySubmission(options: {
       });
     await store.linkClaim(claim, lead.id);
 
+    if (manuallyClosed) {
+      // A later study may be recorded, but must never restart email for a lead closed by an advisor.
+      if (claim.status !== "CLOSED") {
+        claim = { ...claim, status: "CLOSED" };
+        await store.updateClaim(claim);
+      }
+      return { perfil: null, status: "CLOSED" };
+    }
     if (claim.status === "SENT") return { perfil: null, status: "EXISTING" };
     if (claim.status === "HISTORICAL") return { perfil: null, status: "EXISTING" };
     if (claim.status === "REVIEW") return { perfil: claim.perfil, status: "REVIEW" };

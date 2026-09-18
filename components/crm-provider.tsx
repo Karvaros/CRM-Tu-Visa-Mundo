@@ -90,7 +90,9 @@ export function CrmProvider({ children, realData }: { children: ReactNode; realD
         execute: (command) =>
           run(
             (repo) => repo.execute(command),
-            realData ? "Acción guardada en Baserow." : "Acción guardada en la demostración.",
+            realData && command.type === "status" && ["NO_APTO", "INACTIVO"].includes(command.estado)
+              ? "Lead cerrado. Correos comerciales detenidos en ActiveCampaign."
+              : realData ? "Acción guardada en Baserow." : "Acción guardada en la demostración.",
           ),
         saveMessage: (message) =>
           run(

@@ -127,3 +127,66 @@ test("si ActiveCampaign inicia el correo pero falla la respuesta, el reintento n
   assert.equal(started, 1);
   assert.equal((claim as Claim | null)?.status, "SENT");
 });
+
+test("un lead cerrado manualmente conserva el primer estudio sin reactivar correos", async () => {
+  type Claim = NonNullable<Awaited<ReturnType<ReturnType<typeof createStudyStore>["findClaim"]>>>;
+  let claim: Claim | null = null;
+  let lead: Record<string, unknown> & { id: number } = {
+    id: 5, EMAIL: "ana@example.com", ESTADO: "INACTIVO", VERSION: 2, AC_SYNC_STATUS: "OPTED_OUT",
+    PROXIMA_ACCION: "Lead cerrado", SECUENCIA_PAUSADA: true,
+  };
+  let emailCalls = 0;
+  const store = {
+    async findLead() { return lead; },
+    async findClaim() { return claim; },
+    async claimFirst(value: Claim) { claim = { ...value, rowId: 2 }; return { claim, created: true }; },
+    async updateLead(_id: number, fields: Record<string, unknown>) { lead = { ...lead, ...fields }; return lead; },
+    async linkClaim() {},
+    async updateClaim(value: Claim) { claim = value; },
+  } as unknown as ReturnType<typeof createStudyStore>;
+  const campaign = {
+    automationForOutcome() { return 301; },
+    async findContact() { return null; },
+    async historicalStudy() { return null; },
+    async syncContact() { emailCalls++; return { id: "700", email: "ana@example.com" }; },
+    async startStudyAutomation() { emailCalls++; },
+  } as unknown as ReturnType<typeof createActiveCampaign>;
+  const submit = createStudySubmission({ store, campaign, now: () => new Date("2026-09-18T12:00:00Z"), uuid: () => "one" });
+  assert.deepEqual(await submit(answers), { perfil: null, status: "CLOSED" });
+  assert.equal(lead.ESTADO, "INACTIVO");
+  assert.equal(lead.PERFIL_ESTUDIO, "A");
+  assert.equal(lead.PRIMER_ESTUDIO_ID, "one");
+  assert.equal(lead.AC_SYNC_STATUS, "OPTED_OUT");
+  assert.equal((claim as Claim | null)?.status, "CLOSED");
+  assert.equal(emailCalls, 0);
+  assert.deepEqual(await submit(answers), { perfil: null, status: "EXISTING" });
+});
+
+test("el resultado Bajo automático todavía puede recuperar su correo si el primer intento falla", async () => {
+  type Claim = NonNullable<Awaited<ReturnType<ReturnType<typeof createStudyStore>["findClaim"]>>>;
+  let claim: Claim | null = null;
+  let lead: Record<string, unknown> & { id: number } | null = null;
+  let started = 0;
+  const store = {
+    async findLead() { return lead; },
+    async findClaim() { return claim; },
+    async claimFirst(value: Claim) { claim = { ...value, rowId: 2 }; return { claim, created: true }; },
+    async createLead(fields: Record<string, unknown>) { lead = { id: 5, ...fields }; return lead; },
+    async updateLead(_id: number, fields: Record<string, unknown>) { lead = { ...lead!, ...fields }; return lead; },
+    async linkClaim() {},
+    async updateClaim(value: Claim) { claim = value; },
+  } as unknown as ReturnType<typeof createStudyStore>;
+  const campaign = {
+    automationForOutcome() { return 305; },
+    async findContact() { return null; },
+    async historicalStudy() { return null; },
+    async syncContact() { return { id: "700", email: "ana@example.com" }; },
+    async startStudyAutomation() { if (++started === 1) throw new Error("Fallo temporal"); },
+  } as unknown as ReturnType<typeof createActiveCampaign>;
+  const submit = createStudySubmission({ store, campaign, now: () => new Date("2026-09-18T12:00:00Z"), uuid: () => "low" });
+  const lowAnswers = { ...answers, pasaportes: studyOptions.pasaportes[2] };
+  assert.deepEqual(await submit(lowAnswers), { perfil: null, status: "ERROR" });
+  assert.equal((lead as { ESTADO?: unknown } | null)?.ESTADO, "NO_APTO");
+  assert.deepEqual(await submit(lowAnswers), { perfil: "D", status: "SENT" });
+  assert.equal(started, 2);
+});

@@ -45,3 +45,18 @@ test("crea un único lead nuevo y lo muestra tras 30 minutos; conserva estudio a
   assert.equal(leads[0].PRIMER_ESTUDIO_ID, "first-study");
   assert.equal(leads.length, 1);
 });
+
+test("un nuevo formulario no reactiva el correo de un lead dado de baja", async () => {
+  let stopped = 0;
+  const store = {
+    async findLead() { return { id: 7, AC_SYNC_STATUS: "OPTED_OUT" }; },
+  } as unknown as ReturnType<typeof createStudyStore>;
+  const sync = createFormRegistration({ store,
+    readDestination: async () => { throw new Error("No debe leer el destino"); },
+    findFirstMessage: async () => { throw new Error("No debe buscar mensajes"); },
+    keepClosed: async (email) => { assert.equal(email, "test@example.com"); stopped++; },
+  });
+  assert.equal(await sync({ formId: "1", contactId: "7", email: "test@example.com",
+    firstName: "", lastName: "", phone: "" }), "existing");
+  assert.equal(stopped, 1);
+});

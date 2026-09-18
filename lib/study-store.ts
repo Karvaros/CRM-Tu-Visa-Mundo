@@ -3,7 +3,7 @@ import type { StudyAnswers } from "./study";
 export type StudyTableIds = { leads: number; interacciones: number; emailField: number; eventField: number };
 
 export type StoredProfile = "A" | "B" | "C" | "D" | "PENDIENTE";
-export type ClaimStatus = "PROCESSING" | "REVIEW" | "SENT" | "ERROR" | "HISTORICAL";
+export type ClaimStatus = "PROCESSING" | "REVIEW" | "SENT" | "ERROR" | "HISTORICAL" | "CLOSED";
 export type StudyClaim = {
   id: string;
   email: string;

@@ -7,7 +7,7 @@ import "./study.css";
 
 const TOTAL_PAGES = studyPages.length + 1;
 
-type Result = { perfil: StudyOutcome["perfil"] | null; status: "SENT" | "EXISTING" | "REVIEW" | "PROCESSING" | "ERROR" };
+type Result = { perfil: StudyOutcome["perfil"] | null; status: "SENT" | "EXISTING" | "REVIEW" | "PROCESSING" | "ERROR" | "CLOSED" };
 
 export default function StudyWizard({ enabled }: { enabled: boolean }) {
   const [page, setPage] = useState(0);
@@ -118,7 +118,7 @@ export default function StudyWizard({ enabled }: { enabled: boolean }) {
               <span className="study-kicker">{result.status === "SENT" ? "ESTUDIO COMPLETADO" : "ESTUDIO REGISTRADO"}</span>
               <h1>{result.perfil === "PENDIENTE" ? "Tu Estudio de Perfil requiere revisión" : result.perfil ? "Resultado de tu Estudio de Perfil" : "Ya recibimos tu Estudio de Perfil"}</h1>
               {result.perfil && result.perfil !== "PENDIENTE" && <p>Resultado: <strong>{studyProfileLabels[result.perfil]}</strong>.</p>}
-              <p className="study-result__detail">{result.status === "EXISTING" ? "Este correo ya tiene un Estudio de Perfil anterior. Se conserva únicamente la primera clasificación; las respuestas nuevas no la cambian." : result.status === "PROCESSING" ? "Estamos terminando de registrar tu primer estudio. No necesitas enviarlo otra vez." : result.status === "ERROR" ? "Guardamos tu primera respuesta, pero el envío del correo está pendiente. Nuestro equipo podrá revisarlo sin que tengas que repetir el estudio." : result.perfil === "D" ? studyResultCopy.low : result.perfil === "PENDIENTE" ? studyResultCopy.pending : studyResultCopy.positive}</p>
+              <p className="study-result__detail">{result.status === "EXISTING" ? "Este correo ya tiene un Estudio de Perfil anterior. Se conserva únicamente la primera clasificación; las respuestas nuevas no la cambian." : result.status === "CLOSED" ? "Recibimos tus respuestas. Nuestro equipo revisará la información si corresponde." : result.status === "PROCESSING" ? "Estamos terminando de registrar tu primer estudio. No necesitas enviarlo otra vez." : result.status === "ERROR" ? "Guardamos tu primera respuesta, pero el envío del correo está pendiente. Nuestro equipo podrá revisarlo sin que tengas que repetir el estudio." : result.perfil === "D" ? studyResultCopy.low : result.perfil === "PENDIENTE" ? studyResultCopy.pending : studyResultCopy.positive}</p>
             </div>
           )}
         </div>
