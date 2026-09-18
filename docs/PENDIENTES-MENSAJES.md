@@ -2,6 +2,12 @@
 
 Este documento reúne las decisiones y recursos que todavía faltan. Los mensajes afectados permanecen con `REQUIERE_REVISION=true`, por lo que HOY no permite copiarlos, abrirlos en WhatsApp ni confirmarlos como enviados.
 
+## Estado revisado el 18 de septiembre de 2026
+
+La semilla contiene 24 mensajes SIN ESTUDIO (seis por cada destino: Canadá, Australia, Estados Unidos y Reino Unido) y ocho entradas ESTUDIO para Canadá, incluida una variante de resultado para cada perfil A/B/C. No hay todavía mensajes posestudio específicos para Australia, Estados Unidos ni Reino Unido. Esos leads permanecen en atención manual; no se les debe asignar el texto de Canadá.
+
+En Canadá siguen bloqueados para revisión la bienvenida posestudio, el Reel de tres errores, la oferta del 25 %, el caso de Ana y su hija y la comparación Basic/Premium. El artículo de Perfil para Reino Unido también sigue bloqueado hasta confirmar su URL. Los demás enlaces ya registrados no deben confundirse con estos recursos faltantes.
+
 ## Recursos pendientes
 
 - **Tres errores comunes:** agregar la URL definitiva del Reel de Instagram.
@@ -36,12 +42,12 @@ Las referencias a Augusto se conservan porque representan el nombre del asesor q
 
 La bienvenida del grupo ESTUDIO no debe repetirse cuando el lead ya recorrió SIN ESTUDIO.
 
-- Si ActiveCampaign informa la clasificación pero todavía no envió el resultado específico por WhatsApp, el CRM entra por el mensaje 2: Alto/Medio-Alto para A/B o Medio para C.
-- Si ActiveCampaign ya envió ese resultado por WhatsApp, el CRM entra por el mensaje 3.
+- ActiveCampaign envía el resultado del estudio por correo; ese correo no cuenta como WhatsApp enviado. El CRM entra por el mensaje 2: Alto para A, Medio Alto para B o Medio para C.
+- Solo si existe una confirmación de envío del resultado por WhatsApp en INTERACCIONES, el CRM entra por el mensaje 3.
 - Después se omiten los hitos que ya haya recibido el lead dentro de SIN ESTUDIO.
 - La primera respuesta válida fija la clasificación del lead. Un estudio posterior se registra como repetido, pero no cambia A/B/C, no reinicia la secuencia y no vuelve a enviar el resultado.
 
-Cuando corresponda integrar ActiveCampaign, primero se revisarán en modo lectura la versión inicial del estudio, sus campos y la automatización que distribuye las calificaciones. Falta definir la tabla exacta de equivalencias entre los mensajes posteriores de ambas secuencias, el identificador estable del primer estudio y el dato con el que ActiveCampaign confirmará si el resultado fue enviado por WhatsApp.
+Falta definir la tabla exacta de equivalencias entre los mensajes posteriores de ambas secuencias y probar la continuidad para leads con WhatsApp previos confirmados. No se infiere un envío de WhatsApp a partir de un correo de ActiveCampaign, de abrir WhatsApp ni de copiar el texto.
 
 ## Correcciones resueltas
 
@@ -51,3 +57,4 @@ Cuando corresponda integrar ActiveCampaign, primero se revisarán en modo lectur
 - Página de trámite de Estados Unidos corregida.
 - Página de trámite de Reino Unido corregida.
 - Página de testimonios agregada a la secuencia ESTUDIO.
+
