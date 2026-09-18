@@ -20,7 +20,11 @@ export default async function AccessPage({ searchParams }: { searchParams: Promi
             <input id="username" name="username" autoComplete="username" maxLength={40} required />
             <label htmlFor="password">Contraseña</label>
             <input id="password" name="password" type="password" autoComplete="current-password" required />
-            {error && <p className="login-error" role="alert">Usuario o contraseña incorrectos.</p>}
+            {error && <p className="login-error" role="alert">
+              {error === "limite"
+                ? "Por seguridad, espera diez minutos antes de volver a intentar."
+                : "Usuario o contraseña incorrectos."}
+            </p>}
             <button className="button button--primary" type="submit">Entrar</button>
           </form>
         ) : <p className="login-error">El acceso privado aún no está configurado.</p>}
@@ -28,4 +32,5 @@ export default async function AccessPage({ searchParams }: { searchParams: Promi
     </main>
   );
 }
+
 

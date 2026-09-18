@@ -7,7 +7,7 @@ import { signIn, signOut } from "@/auth";
 import { publicRateLimited } from "@/lib/public-rate-limit";
 
 export async function login(formData: FormData) {
-  if (await publicRateLimited("login", await headers())) redirect("/acceso?error=1");
+  if (await publicRateLimited("login", await headers())) redirect("/acceso?error=limite");
   try {
     await signIn("credentials", {
       username: formData.get("username"),
@@ -23,4 +23,5 @@ export async function login(formData: FormData) {
 export async function logout() {
   await signOut({ redirectTo: "/acceso" });
 }
+
 
