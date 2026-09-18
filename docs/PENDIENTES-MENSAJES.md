@@ -2,6 +2,20 @@
 
 Este documento reúne las decisiones y recursos que todavía faltan. Los mensajes afectados permanecen con `REQUIERE_REVISION=true`, por lo que HOY no permite copiarlos, abrirlos en WhatsApp ni confirmarlos como enviados.
 
+## Datos y decisiones para pedir al propietario
+
+No hace falta reunirlos todos ahora. Cuando se retome un mensaje, pedir únicamente lo que corresponda:
+
+1. **Reel «Tres errores comunes» (Canadá):** URL definitiva de Instagram.
+2. **Caso de Ana y su hija (Canadá):** URL definitiva del video de YouTube.
+3. **Comparación Basic/Premium (Canadá):** texto y enlace del video «Beneficios del Plan Basic», o confirmación de que ese video no se incluirá. El enlace de la página comparativa ya existe.
+4. **Oferta del 25 % (Canadá):** duración del descuento contada desde el envío, tratamiento de fines de semana e imagen que acompañará el mensaje. La fecha exacta se calculará al enviarlo.
+5. **Artículo en Perfil (Reino Unido):** confirmar el enlace específico antes de habilitar ese mensaje.
+6. **Bienvenida posestudio (Canadá):** confirmar si se elimina o se reescribe; el texto actual habla de registro y por eso está bloqueado. La secuencia activa entra directamente por el resultado A/B/C.
+7. **Australia, Estados Unidos y Reino Unido después de testimonios:** aportar o aprobar los próximos mensajes y sus recursos. Por ahora esas secuencias terminan en testimonios.
+
+La revisión individual de estudios antiguos en atención manual y las equivalencias entre hitos son tareas de configuración del CRM, no datos que el propietario tenga que buscar.
+
 ## Estado revisado el 18 de septiembre de 2026
 
 MENSAJES contiene 45 plantillas: 24 SIN ESTUDIO (seis por destino), nueve ESTUDIO de Canadá y cuatro para cada uno de Australia, Estados Unidos y Reino Unido. Con aprobación del propietario se reutilizaron los textos genéricos A/B/C de resultado y testimonios, cada uno en una secuencia propia del destino. Los resultados apuntan al video general del trámite; testimonios apunta a la página de Tu Visa Mundo. Para cada destino, el estudio A/B/C selecciona el mensaje de resultado de orden 2 y, tras confirmar su envío por WhatsApp, el CRM programa testimonios de orden 3 desde la fecha real de ese envío. El perfil D no tiene secuencia comercial.
