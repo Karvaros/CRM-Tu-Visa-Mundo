@@ -1,5 +1,6 @@
 import { applyCommand } from "./crm";
 import { today } from "./dates";
+import { validateMessageEdit } from "./message-edit";
 import { createMockData } from "./mock-data";
 import type { CrmRepository } from "./repository";
 import type { CrmData } from "./types";
@@ -43,29 +44,7 @@ export function createMockRepository(
     },
     async saveMessage(message) {
       const data = read();
-      if (!message.texto.trim() || !message.titulo.trim())
-        throw new Error("El título y el texto son obligatorios.");
-      if (/\{\{?nombre\}?\}/i.test(message.texto))
-        throw new Error(
-          "Los mensajes de difusión no pueden incluir una variable de nombre.",
-        );
-      if (!Number.isInteger(message.diaSecuencia) || message.diaSecuencia < 0)
-        throw new Error("El día de secuencia debe ser cero o mayor.");
-      if (!message.requiereRevision) {
-        if (/\[link[^\]]*\]/i.test(message.texto))
-          throw new Error("Reemplaza el marcador de enlace antes de aprobar.");
-        if (message.recursoTipo !== "TEXTO" && !message.recursoUrl)
-          throw new Error("Agrega el recurso antes de aprobar el mensaje.");
-        if (
-          ["WEB", "YOUTUBE", "REEL", "ARTICULO"].includes(
-            message.recursoTipo,
-          ) &&
-          !message.texto.includes(message.recursoUrl ?? "")
-        )
-          throw new Error(
-            "Incluye el enlace del recurso dentro del texto antes de aprobar.",
-          );
-      }
+      validateMessageEdit(message);
       if (!data.mensajes.some((item) => item.id === message.id))
         throw new Error("El mensaje no existe.");
       data.mensajes = data.mensajes.map((item) =>
@@ -78,3 +57,4 @@ export function createMockRepository(
     },
   };
 }
+

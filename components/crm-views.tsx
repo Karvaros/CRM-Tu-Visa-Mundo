@@ -431,7 +431,7 @@ export function CrmView({ view }: { view: string }) {
   );
 }
 function MessageEditor({ message }: { message: Message }) {
-  const { busy, saveMessage, realData } = useCrm();
+  const { busy, saveMessage } = useCrm();
   return (
     <form
       className="lead-card"
@@ -446,6 +446,7 @@ function MessageEditor({ message }: { message: Message }) {
           recursoUrl: String(form.get("recursoUrl") || "") || undefined,
           soloDiasHabiles: form.get("habiles") === "on",
           requiereRevision: form.get("revision") === "on",
+          observaciones: String(form.get("observaciones") || "").split("\n").map((note) => note.trim()).filter(Boolean),
         });
       }}
     >
@@ -520,14 +521,12 @@ function MessageEditor({ message }: { message: Message }) {
         />
         Bloquear envío hasta completar la revisión
       </label>
-      {message.observaciones.map((note) => (
-        <p className="review-note" key={note}>
-          {note}
-        </p>
-      ))}
-      <button className="button button--primary" disabled={busy || realData}>
-        {realData ? "Edición pendiente en Baserow" : "Guardar cambios"}
-      </button>
+      <label>
+        Notas pendientes (una por línea)
+        <textarea name="observaciones" maxLength={5000} rows={2} defaultValue={message.observaciones.join("\n")} />
+      </label>
+      <button className="button button--primary" disabled={busy}>Guardar cambios</button>
     </form>
   );
 }
+

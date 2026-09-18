@@ -18,12 +18,24 @@ export function createHttpRepository(): CrmRepository {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(command),
     }).then(responseData),
-    async saveMessage() {
-      throw new Error("La edición de mensajes estará disponible cuando se carguen en Baserow.");
-    },
+    saveMessage: (message) => fetch("/api/crm/messages/edit", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        id: message.id,
+        titulo: message.titulo,
+        texto: message.texto,
+        diaSecuencia: message.diaSecuencia,
+        recursoUrl: message.recursoUrl,
+        soloDiasHabiles: message.soloDiasHabiles,
+        requiereRevision: message.requiereRevision,
+        observaciones: message.observaciones,
+      }),
+    }).then(responseData),
     async reset() {
       throw new Error("Los datos reales no se pueden restablecer desde el CRM.");
     },
   };
 }
+
 
