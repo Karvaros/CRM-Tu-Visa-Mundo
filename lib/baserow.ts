@@ -1,4 +1,11 @@
-import type { CrmData, Interaction, Lead, Message, MessageSegment } from "./types";
+import type {
+  CrmData,
+  Interaction,
+  Lead,
+  LeadOperationalSnapshot,
+  Message,
+  MessageSegment,
+} from "./types";
 import { today } from "./dates";
 
 export type BaserowTables = { leads: number; interacciones: number; mensajes: number };
@@ -34,6 +41,33 @@ function segments(raw: string): MessageSegment[] {
 }
 function dateOnly(raw: string | undefined): string | undefined {
   return raw?.slice(0, 10) || undefined;
+}
+
+type UndoPayload = {
+  kind: "CRM_UNDO_V1";
+  snapshot: LeadOperationalSnapshot;
+  label: string;
+};
+
+function undoPayload(raw: string | undefined): UndoPayload | undefined {
+  if (!raw) return undefined;
+  try {
+    const parsed = JSON.parse(raw) as Partial<UndoPayload>;
+    if (
+      parsed.kind !== "CRM_UNDO_V1" ||
+      !parsed.snapshot ||
+      typeof parsed.snapshot !== "object" ||
+      typeof parsed.snapshot.estado !== "string" ||
+      typeof parsed.snapshot.proximaAccion !== "string" ||
+      typeof parsed.snapshot.seguimientoManual !== "boolean" ||
+      typeof parsed.snapshot.secuenciaPausada !== "boolean" ||
+      typeof parsed.label !== "string"
+    )
+      return undefined;
+    return parsed as UndoPayload;
+  } catch {
+    return undefined;
+  }
 }
 
 export function mapLead(row: Row): Lead {
@@ -80,12 +114,19 @@ export function mapMessage(row: Row): Message {
 }
 
 export function mapInteraction(row: Row): Interaction {
+  const undo = undoPayload(optional(row, "RESPUESTAS_ESTUDIO"));
+  const externalId = optional(row, "ID_EVENTO_EXTERNO");
   return {
     id: String(row.id), leadId: linkedId(row, "LEAD") ?? "",
     tipo: value(row, "TIPO") as Interaction["tipo"], fecha: value(row, "FECHA"),
     detalle: value(row, "DETALLE"), mensajeId: linkedId(row, "MENSAJE"),
     mensajeTexto: optional(row, "MENSAJE_TEXTO"), asesor: optional(row, "ASESOR"),
-    eventoExternoId: optional(row, "ID_EVENTO_EXTERNO"),
+    eventoExternoId: externalId,
+    undoSnapshot: undo?.snapshot,
+    undoLabel: undo?.label,
+    undoneInteractionId: externalId?.startsWith("UNDO:")
+      ? externalId.slice("UNDO:".length)
+      : undefined,
   };
 }
 
@@ -128,7 +169,10 @@ export function createBaserowReader(options: {
         list(tables.leads), list(tables.interacciones), list(tables.mensajes),
       ]);
       return {
-        leads: leads.map(mapLead), interacciones: interacciones.map(mapInteraction),
+        leads: leads.map(mapLead),
+        interacciones: interacciones
+          .map(mapInteraction)
+          .sort((a, b) => b.fecha.localeCompare(a.fecha) || Number(b.id) - Number(a.id)),
         mensajes: mensajes.map(mapMessage),
       };
     },

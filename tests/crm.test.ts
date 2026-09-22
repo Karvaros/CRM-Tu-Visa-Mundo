@@ -1,6 +1,14 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { applyCommand, applyStudyClassification, priority, renderMessage } from "../lib/crm";
+import {
+  applyCommand,
+  applyStudyClassification,
+  isPendingDefinition,
+  latestUndoableInteraction,
+  leadOperationalSnapshot,
+  priority,
+  renderMessage,
+} from "../lib/crm";
 import { addDays, today, validDate } from "../lib/dates";
 import { createMockData } from "../lib/mock-data";
 import { createMockRepository } from "../lib/mock-repository";
@@ -76,8 +84,127 @@ test("respuesta pausa secuencia, conserva último envío y habilita atención ma
   assert.equal(result.leads[1].secuenciaPausada, true);
   assert.equal(result.leads[1].estado, "EN_CONVERSACION");
   assert.equal(result.leads[1].ultimoContacto, lead.ultimoContacto);
-  assert.equal(priority(result.leads[1], "2026-09-14"), "MANUAL");
+  assert.equal(priority(result.leads[1], "2026-09-14"), "PENDIENTE_DEFINIR");
   assert.equal(result.leads[1].proximoMensajeId, undefined);
+});
+test("caso A: deshacer Respondió recupera exactamente el seguimiento anterior", () => {
+  const data = seed();
+  const lead = data.leads[1];
+  const before = leadOperationalSnapshot(lead);
+  const replied = applyCommand(
+    data,
+    { type: "replied", leadId: lead.id, version: lead.version },
+    now,
+    "reply-a",
+  );
+  const restored = applyCommand(
+    replied,
+    { type: "undo", leadId: lead.id, version: 1, interactionId: "reply-a" },
+    new Date("2026-09-14T15:32:00Z"),
+    "undo-a",
+  );
+  assert.deepEqual(leadOperationalSnapshot(restored.leads[1]), before);
+  assert.equal(restored.leads[1].proximoMensajeId, lead.proximoMensajeId);
+  assert.equal(restored.interacciones[0].tipo, "ACCION_DESHECHA");
+  assert.equal(restored.interacciones[1].tipo, "SEGUIMIENTO_RESTAURADO");
+});
+
+test("caso B: Respondió sin siguiente paso permanece en Pendientes de definir", () => {
+  const data = seed();
+  const lead = data.leads[0];
+  const replied = applyCommand(
+    data,
+    { type: "replied", leadId: lead.id, version: lead.version },
+    now,
+    "reply-b",
+  );
+  assert.equal(isPendingDefinition(replied.leads[0]), true);
+  assert.equal(priority(replied.leads[0], "2026-09-30"), "PENDIENTE_DEFINIR");
+});
+
+test("caso C: reprogramar después de Respondió sale de Pendientes y reaparece en la fecha", () => {
+  const data = seed();
+  const lead = data.leads[0];
+  const replied = applyCommand(
+    data,
+    { type: "replied", leadId: lead.id, version: 0 },
+    now,
+    "reply-c",
+  );
+  const rescheduled = applyCommand(
+    replied,
+    {
+      type: "reschedule",
+      leadId: lead.id,
+      version: 1,
+      fecha: "2026-09-20",
+      accion: "Retomar conversación",
+    },
+    now,
+    "reschedule-c",
+  );
+  assert.equal(isPendingDefinition(rescheduled.leads[0]), false);
+  assert.equal(priority(rescheduled.leads[0], "2026-09-19"), null);
+  assert.equal(priority(rescheduled.leads[0], "2026-09-20"), "MANUAL");
+});
+
+test("caso D: deshacer Cliente recupera su estado comercial anterior", () => {
+  const data = seed();
+  const lead = data.leads[2];
+  const before = leadOperationalSnapshot(lead);
+  const closed = applyCommand(
+    data,
+    { type: "status", leadId: lead.id, version: 0, estado: "CLIENTE" },
+    now,
+    "client-d",
+  );
+  const restored = applyCommand(
+    closed,
+    { type: "undo", leadId: lead.id, version: 1, interactionId: "client-d" },
+    now,
+    "undo-d",
+  );
+  assert.deepEqual(leadOperationalSnapshot(restored.leads[2]), before);
+});
+
+test("caso E: con varias acciones solo se deshace la más reciente", () => {
+  const data = seed();
+  const lead = data.leads[0];
+  const replied = applyCommand(
+    data,
+    { type: "replied", leadId: lead.id, version: 0 },
+    now,
+    "reply-e",
+  );
+  const rescheduled = applyCommand(
+    replied,
+    {
+      type: "reschedule",
+      leadId: lead.id,
+      version: 1,
+      fecha: "2026-09-22",
+      accion: "Confirmar interés",
+    },
+    new Date("2026-09-14T15:31:00Z"),
+    "reschedule-e",
+  );
+  assert.throws(
+    () => applyCommand(
+      rescheduled,
+      { type: "undo", leadId: lead.id, version: 2, interactionId: "reply-e" },
+      now,
+      "wrong-undo-e",
+    ),
+    /última acción/,
+  );
+  const restored = applyCommand(
+    rescheduled,
+    { type: "undo", leadId: lead.id, version: 2, interactionId: "reschedule-e" },
+    now,
+    "undo-e",
+  );
+  assert.equal(isPendingDefinition(restored.leads[0]), true);
+  assert.equal(latestUndoableInteraction(restored, lead.id)?.id, "reply-e");
 });
 test("reprogramar mantiene estado, pausa y último envío; rechaza fechas pasadas", () => {
   const data = seed();

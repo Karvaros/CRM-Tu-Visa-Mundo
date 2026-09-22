@@ -9,6 +9,11 @@ import { Modal } from "./modal";
 
 const sections: { key: LeadPriority; title: string; description: string }[] = [
   {
+    key: "PENDIENTE_DEFINIR",
+    title: "Pendientes de definir",
+    description: "Respondieron y todavía necesitan que el asesor elija el siguiente paso.",
+  },
+  {
     key: "NUEVO",
     title: "Nuevos leads",
     description: "Esperan su primer contacto.",
@@ -38,6 +43,13 @@ function destinationName(value: string) {
   if (normalized === "australia") return "Australia";
   if (["uk", "reinounido"].includes(normalized)) return "Reino Unido";
   return value.trim();
+}
+
+function matchesAgendaFilter(kind: LeadPriority, filter: string) {
+  if (!filter) return true;
+  if (filter === "SEGUIMIENTOS")
+    return ["ATRASADO", "HOY", "MANUAL"].includes(kind);
+  return kind === filter;
 }
 
 const titles: Record<string, string> = {
@@ -79,7 +91,7 @@ export function CrmView({ view }: { view: string }) {
   );
   const due = leads.filter((lead) => {
     const kind = dueKind(lead);
-    return kind && (!agendaFilter || (agendaFilter === "SEGUIMIENTOS" ? kind !== "NUEVO" : kind === "NUEVO"));
+    return kind && matchesAgendaFilter(kind, agendaFilter);
   });
   return (
     <>
@@ -104,6 +116,10 @@ export function CrmView({ view }: { view: string }) {
         <section className="metrics" aria-label="Resumen del día">
           {[
             ["Pendientes hoy", due.length],
+            [
+              "Por definir",
+              due.filter((lead) => dueKind(lead) === "PENDIENTE_DEFINIR").length,
+            ],
             [
               "Nuevos",
               due.filter((lead) => dueKind(lead) === "NUEVO").length,
@@ -147,6 +163,7 @@ export function CrmView({ view }: { view: string }) {
               Tipo de pendiente
               <select value={agendaFilter} onChange={(event) => setAgendaFilter(event.target.value)}>
                 <option value="">Todos los pendientes</option>
+                <option value="PENDIENTE_DEFINIR">Pendientes de definir</option>
                 <option value="NUEVO">Nuevos</option>
                 <option value="SEGUIMIENTOS">Todos los seguimientos</option>
               </select>
@@ -179,7 +196,7 @@ export function CrmView({ view }: { view: string }) {
             </div>
           )}
           {sections.filter((section) =>
-            (!agendaFilter || (agendaFilter === "SEGUIMIENTOS" ? section.key !== "NUEVO" : section.key === "NUEVO")) &&
+            matchesAgendaFilter(section.key, agendaFilter) &&
             (!(search || destination || agendaFilter) || due.some((lead) => dueKind(lead) === section.key)),
           ).map((section) => {
             const items = due
@@ -355,7 +372,7 @@ export function CrmView({ view }: { view: string }) {
               envío.
             </dd>
           </dl>
-          {realData && data.mensajes.length === 0 && <button
+          {realData && <button
             className="button button--primary"
             disabled={busy}
             onClick={async () => {
@@ -363,7 +380,7 @@ export function CrmView({ view }: { view: string }) {
               if (response.ok) window.location.reload();
               else window.alert("No se pudieron cargar los mensajes. Revisa los permisos de Baserow.");
             }}
-          >Cargar mensajes establecidos en Baserow</button>}
+          >Cargar plantillas faltantes en Baserow</button>}
           {realData && data.mensajes.length > 0 && <button
             className="button button--secondary"
             disabled={busy}
@@ -529,4 +546,3 @@ function MessageEditor({ message }: { message: Message }) {
     </form>
   );
 }
-

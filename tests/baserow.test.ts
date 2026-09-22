@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { createBaserowReader, mapLead } from "../lib/baserow";
+import { createBaserowReader, mapInteraction, mapLead } from "../lib/baserow";
 import { priority } from "../lib/crm";
 const tables = { leads: 101, interacciones: 102, mensajes: 103 };
 
@@ -57,5 +57,41 @@ test("un estudio pendiente con fecha y hora aparece en HOY sin inventar un mensa
   assert.equal(lead.proximoContacto, "2026-09-17");
   assert.equal(priority(lead, "2026-09-17"), "MANUAL");
   assert.equal(lead.proximoMensajeId, undefined);
+});
+
+test("lee la fotografía reversible y la referencia de una acción deshecha", () => {
+  const snapshot = {
+    estado: "SEGUIMIENTO",
+    proximaAccion: "Enviar mensaje 3",
+    seguimientoManual: false,
+    secuenciaPausada: false,
+    secuenciaId: "sin-estudio-canada",
+    segmento: "SIN_ESTUDIO",
+    tipoEstudio: "NINGUNO",
+    proximoMensajeId: "9",
+    proximoContacto: "2026-09-24",
+  };
+  const reversible = mapInteraction({
+    id: 81,
+    TIPO: "RESPONDIO",
+    LEAD: [{ id: 42 }],
+    FECHA: "2026-09-22T13:15:00Z",
+    RESPUESTAS_ESTUDIO: JSON.stringify({
+      kind: "CRM_UNDO_V1",
+      snapshot,
+      label: "Marcado como Respondió",
+    }),
+  });
+  assert.deepEqual(reversible.undoSnapshot, snapshot);
+  assert.equal(reversible.undoLabel, "Marcado como Respondió");
+
+  const undone = mapInteraction({
+    id: 82,
+    TIPO: "ACCION_DESHECHA",
+    LEAD: [{ id: 42 }],
+    FECHA: "2026-09-22T13:17:00Z",
+    ID_EVENTO_EXTERNO: "UNDO:81",
+  });
+  assert.equal(undone.undoneInteractionId, "81");
 });
 

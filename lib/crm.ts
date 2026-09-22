@@ -2,8 +2,10 @@ import { addDays, today, validDate } from "./dates";
 import {
   leadStatuses,
   type CrmData,
+  type Interaction,
   type Lead,
   type LeadCommand,
+  type LeadOperationalSnapshot,
   type LeadPriority,
   type Message,
   type StudyClassification,
@@ -11,15 +13,93 @@ import {
 
 export const isClosed = (lead: Lead) =>
   ["CLIENTE", "NO_APTO", "INACTIVO"].includes(lead.estado);
+export const PENDING_DEFINITION_ACTION =
+  "Definir el siguiente paso de la conversación";
+
+export function isPendingDefinition(lead: Lead): boolean {
+  return (
+    lead.estado === "EN_CONVERSACION" &&
+    lead.secuenciaPausada &&
+    lead.seguimientoManual &&
+    lead.proximaAccion === PENDING_DEFINITION_ACTION
+  );
+}
+
 export function priority(lead: Lead, date: string, now = new Date()): LeadPriority | null {
-  if (isClosed(lead) || !lead.proximoContacto || lead.proximoContacto > date)
-    return null;
+  if (isClosed(lead)) return null;
+  if (isPendingDefinition(lead)) return "PENDIENTE_DEFINIR";
+  if (!lead.proximoContacto || lead.proximoContacto > date) return null;
   if (lead.estado === "NUEVO" && lead.proximoContactoExacto &&
     new Date(lead.proximoContactoExacto).getTime() > now.getTime()) return null;
   if (lead.seguimientoManual) return "MANUAL";
   if (lead.secuenciaPausada) return null;
   if (lead.estado === "NUEVO") return "NUEVO";
   return lead.proximoContacto < date ? "ATRASADO" : "HOY";
+}
+
+const snapshotFields = [
+  "estado",
+  "ultimoContacto",
+  "ultimoMensajeId",
+  "proximoContacto",
+  "proximoContactoExacto",
+  "proximaAccion",
+  "proximoMensajeId",
+  "seguimientoManual",
+  "secuenciaPausada",
+  "secuenciaId",
+  "segmento",
+  "tipoEstudio",
+  "perfilEstudio",
+  "primerEstudioId",
+  "fechaPrimerEstudio",
+] as const satisfies readonly (keyof LeadOperationalSnapshot)[];
+
+export function leadOperationalSnapshot(lead: Lead): LeadOperationalSnapshot {
+  return Object.fromEntries(
+    snapshotFields.map((field) => [field, lead[field]]),
+  ) as LeadOperationalSnapshot;
+}
+
+function restoreOperationalSnapshot(
+  lead: Lead,
+  snapshot: LeadOperationalSnapshot,
+) {
+  for (const field of snapshotFields) {
+    (lead as unknown as Record<string, unknown>)[field] = snapshot[field];
+  }
+}
+
+function interactionOrder(a: Interaction, b: Interaction) {
+  const byDate = b.fecha.localeCompare(a.fecha);
+  if (byDate) return byDate;
+  return Number(b.id) - Number(a.id);
+}
+
+export function latestUndoableInteraction(
+  data: Pick<CrmData, "interacciones">,
+  leadId: string,
+): Interaction | undefined {
+  const undone = new Set(
+    data.interacciones
+      .filter((item) => item.undoneInteractionId)
+      .map((item) => item.undoneInteractionId),
+  );
+  const ordered = data.interacciones
+    .filter(
+      (item) =>
+        item.leadId === leadId &&
+        !["ACCION_DESHECHA", "SEGUIMIENTO_RESTAURADO"].includes(item.tipo),
+    )
+    .sort(interactionOrder);
+  for (const interaction of ordered) {
+    if (interaction.undoSnapshot) {
+      if (undone.has(interaction.id)) continue;
+      return interaction;
+    }
+    return undefined;
+  }
+  return undefined;
 }
 export function renderMessage(
   message: Message | undefined,
@@ -59,7 +139,48 @@ export function applyCommand(
       "El lead cambió. Revisa la ficha antes de volver a guardar.",
     );
   const date = today(now);
+  if (command.type === "undo") {
+    const interaction = result.interacciones.find(
+      (item) => item.id === command.interactionId,
+    );
+    if (
+      !interaction ||
+      interaction.leadId !== lead.id ||
+      !interaction.undoSnapshot
+    )
+      throw new Error("La acción seleccionada no se puede deshacer.");
+    if (latestUndoableInteraction(result, lead.id)?.id !== interaction.id)
+      throw new Error("Solo se puede deshacer la última acción del lead.");
+    restoreOperationalSnapshot(lead, interaction.undoSnapshot);
+    lead.version++;
+    const restoredMessage = lead.proximoMensajeId
+      ? result.mensajes.find((item) => item.id === lead.proximoMensajeId)
+      : undefined;
+    result.interacciones.unshift(
+      {
+        id,
+        leadId: lead.id,
+        tipo: "ACCION_DESHECHA",
+        fecha: now.toISOString(),
+        detalle: `Acción deshecha: ${interaction.undoLabel ?? interaction.detalle}`,
+        asesor: lead.asesor,
+        undoneInteractionId: interaction.id,
+      },
+      {
+        id: `${id}-restored`,
+        leadId: lead.id,
+        tipo: "SEGUIMIENTO_RESTAURADO",
+        fecha: now.toISOString(),
+        detalle: `Restaurado seguimiento: ${restoredMessage?.titulo ?? "sin mensaje pendiente"} / próxima fecha ${lead.proximoContacto ?? "sin fecha"} / estado ${lead.estado.replaceAll("_", " ")}`,
+        asesor: lead.asesor,
+      },
+    );
+    return result;
+  }
+
+  const before = leadOperationalSnapshot(lead);
   let detalle = "";
+  let undoLabel: string | undefined;
   let tipo: CrmData["interacciones"][number]["tipo"];
   let message: Message | undefined;
   if (command.type === "sent") {
@@ -104,11 +225,13 @@ export function applyCommand(
     lead.estado = "EN_CONVERSACION";
     lead.secuenciaPausada = true;
     lead.seguimientoManual = true;
-    lead.proximoContacto = date;
+    lead.proximoContacto = undefined;
+    lead.proximoContactoExacto = undefined;
     lead.proximoMensajeId = undefined;
-    lead.proximaAccion = "Revisar respuesta y acordar el próximo paso";
+    lead.proximaAccion = PENDING_DEFINITION_ACTION;
     tipo = "RESPONDIO";
     detalle = "Respondió. Secuencia pausada; requiere atención manual.";
+    undoLabel = "Marcado como Respondió";
   } else if (command.type === "reschedule") {
     if (isClosed(lead))
       throw new Error("Reabre el lead antes de reprogramarlo.");
@@ -120,9 +243,28 @@ export function applyCommand(
     lead.seguimientoManual = true;
     tipo = "REPROGRAMADO";
     detalle = `${command.fecha}: ${lead.proximaAccion}`;
+    undoLabel = "Seguimiento reprogramado";
+  } else if (command.type === "nextStep") {
+    if (!isPendingDefinition(lead))
+      throw new Error("Este lead ya tiene definido su siguiente paso.");
+    const steps = {
+      MANUAL: "Seguir conversación manualmente",
+      ESTUDIO: "Enviar estudio de perfil",
+      ASESORIA: "Ofrecer asesoría personalizada",
+      INFORMACION: "Enviar información / precios",
+    } as const;
+    lead.proximoContacto = date;
+    lead.proximaAccion = steps[command.step];
+    lead.seguimientoManual = true;
+    lead.secuenciaPausada = true;
+    lead.proximoMensajeId = undefined;
+    tipo = "SIGUIENTE_PASO";
+    detalle = `Siguiente paso definido: ${lead.proximaAccion}`;
+    undoLabel = detalle;
   } else {
     if (!leadStatuses.includes(command.estado))
       throw new Error("Estado inválido.");
+    const wasPending = isPendingDefinition(lead);
     detalle = `${lead.estado} → ${command.estado}`;
     tipo = "ESTADO";
     lead.estado = command.estado;
@@ -133,7 +275,18 @@ export function applyCommand(
       lead.seguimientoManual = false;
       lead.proximaAccion =
         command.estado === "CLIENTE" ? "Venta realizada" : "Lead cerrado";
+    } else if (wasPending) {
+      lead.proximoContacto = date;
+      lead.proximoContactoExacto = undefined;
+      lead.proximoMensajeId = undefined;
+      lead.secuenciaPausada = true;
+      lead.seguimientoManual = true;
+      lead.proximaAccion =
+        command.estado === "INTERESADO"
+          ? "Acordar próximo paso comercial"
+          : "Continuar conversación manualmente";
     }
+    undoLabel = `Cambio de estado: ${detalle}`;
   }
   lead.version++;
   result.interacciones.unshift({
@@ -146,6 +299,7 @@ export function applyCommand(
     ...(command.type === "sent"
       ? { mensajeId: message!.id, mensajeTexto: command.mensajeTexto }
       : {}),
+    ...(undoLabel ? { undoSnapshot: before, undoLabel } : {}),
   });
   return result;
 }

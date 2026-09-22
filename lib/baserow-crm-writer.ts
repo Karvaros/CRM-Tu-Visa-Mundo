@@ -17,7 +17,8 @@ function leadPatch(lead: Lead): Record<string, unknown> {
     ESTADO: lead.estado,
     ULTIMO_CONTACTO: lead.ultimoContacto ?? null,
     ULTIMO_MENSAJE: lead.ultimoMensajeId ? [rowId(lead.ultimoMensajeId)] : [],
-    PROXIMO_CONTACTO: lead.proximoContacto ? `${lead.proximoContacto}T15:00:00Z` : null,
+    PROXIMO_CONTACTO: lead.proximoContactoExacto ??
+      (lead.proximoContacto ? `${lead.proximoContacto}T15:00:00Z` : null),
     PROXIMO_MENSAJE: lead.proximoMensajeId ? [rowId(lead.proximoMensajeId)] : [],
     PROXIMA_ACCION: lead.proximaAccion,
     SEGUIMIENTO_MANUAL: lead.seguimientoManual,
@@ -51,7 +52,10 @@ export function createBaserowCrmWriter(options: {
       const before = await reader.load();
       const after = applyCommand(before, command, new Date(), crypto.randomUUID());
       const lead = after.leads.find((item) => item.id === command.leadId)!;
-      const interaction = after.interacciones[0];
+      const beforeInteractionIds = new Set(before.interacciones.map((item) => item.id));
+      const interactions = after.interacciones.filter(
+        (item) => !beforeInteractionIds.has(item.id),
+      );
       const optOut = command.type === "status" && ["NO_APTO", "INACTIVO"].includes(command.estado);
       if (optOut && lead.email) {
         if (!stopMarketing) throw new Error("No está configurada la detención de correos comerciales.");
@@ -65,16 +69,30 @@ export function createBaserowCrmWriter(options: {
         ...leadPatch(lead), ...(optOut ? { AC_SYNC_STATUS: "OPTED_OUT" } : {}),
       });
       try {
-        await write(tables.interacciones, "POST", null, {
-          TIPO: interaction.tipo,
-          LEAD: [rowId(lead.id)],
-          FECHA: interaction.fecha,
-          DETALLE: interaction.detalle,
-          ASESOR: advisor,
-          ORIGEN_SISTEMA: "CRM_V2",
-          ...(interaction.mensajeId ? { MENSAJE: [rowId(interaction.mensajeId)] } : {}),
-          ...(interaction.mensajeTexto ? { MENSAJE_TEXTO: interaction.mensajeTexto } : {}),
-        });
+        for (const interaction of interactions) {
+          await write(tables.interacciones, "POST", null, {
+            TIPO: interaction.tipo,
+            LEAD: [rowId(lead.id)],
+            FECHA: interaction.fecha,
+            DETALLE: interaction.detalle,
+            ASESOR: advisor,
+            ORIGEN_SISTEMA: "CRM_V2",
+            ...(interaction.mensajeId ? { MENSAJE: [rowId(interaction.mensajeId)] } : {}),
+            ...(interaction.mensajeTexto ? { MENSAJE_TEXTO: interaction.mensajeTexto } : {}),
+            ...(interaction.undoSnapshot
+              ? {
+                  RESPUESTAS_ESTUDIO: JSON.stringify({
+                    kind: "CRM_UNDO_V1",
+                    snapshot: interaction.undoSnapshot,
+                    label: interaction.undoLabel,
+                  }),
+                }
+              : {}),
+            ...(interaction.undoneInteractionId
+              ? { ID_EVENTO_EXTERNO: `UNDO:${interaction.undoneInteractionId}` }
+              : {}),
+          });
+        }
       } catch {
         // The lead update is authoritative. The caller refreshes and sees its new version.
         throw new Error("El lead se actualizó, pero no se guardó su historial. Recarga antes de continuar y revisa Baserow.");

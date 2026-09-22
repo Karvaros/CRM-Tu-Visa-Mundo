@@ -13,7 +13,13 @@ import { createHttpRepository } from "@/lib/http-repository";
 import type { CrmRepository } from "@/lib/repository";
 import type { CrmData, LeadCommand, Message } from "@/lib/types";
 import { today } from "@/lib/dates";
+import { latestUndoableInteraction } from "@/lib/crm";
 import { usePathname } from "next/navigation";
+
+type Notice = {
+  message: string;
+  undo?: { leadId: string; interactionId: string };
+};
 
 interface CrmContextValue {
   data: CrmData | null;
@@ -35,7 +41,7 @@ export function CrmProvider({ children, realData }: { children: ReactNode; realD
   const [date, setDate] = useState("");
   const [clock, setClock] = useState(0);
   const [busy, setBusy] = useState(false);
-  const [notice, setNotice] = useState("");
+  const [notice, setNotice] = useState<Notice | null>(null);
   const [error, setError] = useState("");
   useEffect(() => {
     setDate(today());
@@ -56,15 +62,16 @@ export function CrmProvider({ children, realData }: { children: ReactNode; realD
   }, [pathname, realData]);
   async function run(
     action: (repo: CrmRepository) => Promise<CrmData>,
-    success: string,
+    success: string | ((result: CrmData) => Notice),
   ) {
     if (!repository.current || lock.current) return false;
     lock.current = true;
     setBusy(true);
     setError("");
     try {
-      setData(await action(repository.current));
-      setNotice(success);
+      const result = await action(repository.current);
+      setData(result);
+      setNotice(typeof success === "string" ? { message: success } : success(result));
       return true;
     } catch (error) {
       setError(
@@ -78,6 +85,47 @@ export function CrmProvider({ children, realData }: { children: ReactNode; realD
       setBusy(false);
     }
   }
+  async function execute(command: LeadCommand) {
+    const leadName = data?.leads.find((lead) => lead.id === command.leadId)?.nombre ?? "Lead";
+    const undoneClosure = command.type === "undo"
+      ? data?.interacciones.find((item) => item.id === command.interactionId)?.detalle
+      : undefined;
+    return run((repo) => repo.execute(command), (result) => {
+      if (command.type === "undo") {
+        const emailNotice =
+          realData && /→ (NO_APTO|INACTIVO)$/.test(undoneClosure ?? "")
+            ? " Los correos comerciales permanecen detenidos."
+            : "";
+        return { message: `${leadName}: última acción deshecha y seguimiento restaurado.${emailNotice}` };
+      }
+      const undoable = latestUndoableInteraction(result, command.leadId);
+      const undo = undoable
+        ? { leadId: command.leadId, interactionId: undoable.id }
+        : undefined;
+      if (command.type === "replied") {
+        return { message: `${leadName} fue marcado como Respondió`, undo };
+      }
+      if (command.type === "reschedule") {
+        return { message: `${leadName}: seguimiento reprogramado`, undo };
+      }
+      if (command.type === "nextStep") {
+        return { message: `${leadName}: siguiente paso guardado`, undo };
+      }
+      if (command.type === "status") {
+        const status = command.estado.replaceAll("_", " ").toLowerCase();
+        const emailNotice =
+          realData && ["NO_APTO", "INACTIVO"].includes(command.estado)
+            ? " y correos comerciales detenidos"
+            : "";
+        return { message: `${leadName} fue marcado como ${status}${emailNotice}`, undo };
+      }
+      return {
+        message: realData
+          ? "Acción guardada en Baserow."
+          : "Acción guardada en la demostración.",
+      };
+    });
+  }
   return (
     <Context.Provider
       value={{
@@ -86,14 +134,8 @@ export function CrmProvider({ children, realData }: { children: ReactNode; realD
         clock,
         busy,
         realData,
-        notify: setNotice,
-        execute: (command) =>
-          run(
-            (repo) => repo.execute(command),
-            realData && command.type === "status" && ["NO_APTO", "INACTIVO"].includes(command.estado)
-              ? "Lead cerrado. Correos comerciales detenidos en ActiveCampaign."
-              : realData ? "Acción guardada en Baserow." : "Acción guardada en la demostración.",
-          ),
+        notify: (message) => setNotice({ message }),
+        execute,
         saveMessage: (message) =>
           run(
             (repo) => repo.saveMessage(message),
@@ -105,8 +147,26 @@ export function CrmProvider({ children, realData }: { children: ReactNode; realD
     >
       {notice && (
         <div className="toast" role="status">
-          {notice}
-          <button aria-label="Cerrar aviso" onClick={() => setNotice("")}>
+          <span>{notice.message}</span>
+          {notice.undo && (
+            <button
+              className="toast__undo"
+              disabled={busy}
+              onClick={async () => {
+                const lead = data?.leads.find((item) => item.id === notice.undo?.leadId);
+                if (!lead || !notice.undo) return;
+                await execute({
+                  type: "undo",
+                  leadId: lead.id,
+                  version: lead.version,
+                  interactionId: notice.undo.interactionId,
+                });
+              }}
+            >
+              Deshacer
+            </button>
+          )}
+          <button aria-label="Cerrar aviso" onClick={() => setNotice(null)}>
             ×
           </button>
         </div>

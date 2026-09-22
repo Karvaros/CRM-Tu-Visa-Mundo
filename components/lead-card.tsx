@@ -1,7 +1,13 @@
 "use client";
 import { useState } from "react";
 import { dateLabel } from "@/lib/dates";
-import { isClosed, priority, renderMessage } from "@/lib/crm";
+import {
+  isClosed,
+  isPendingDefinition,
+  latestUndoableInteraction,
+  priority,
+  renderMessage,
+} from "@/lib/crm";
 import { leadStatuses, type Lead, type LeadStatus } from "@/lib/types";
 import { useCrm } from "./crm-provider";
 import { Modal } from "./modal";
@@ -15,6 +21,10 @@ export function LeadCard({ lead }: { lead: Lead }) {
     (item) => item.id === lead.proximoMensajeId,
   );
   const text = renderMessage(message, lead);
+  const pendingDefinition = isPendingDefinition(lead);
+  const undoable = data
+    ? latestUndoableInteraction(data, lead.id)
+    : undefined;
   const canSend = Boolean(
     text && priority(lead, date, new Date(clock || Date.now())) && !message?.requiereRevision,
   );
@@ -79,6 +89,80 @@ export function LeadCard({ lead }: { lead: Lead }) {
           <strong>{lead.proximaAccion}</strong>
         </div>
       </div>
+      {pendingDefinition && (
+        <section className="next-step-panel" aria-label="Definir siguiente paso">
+          <h4>¿Qué hacemos ahora?</h4>
+          <p>
+            La secuencia automática está pausada. El lead permanecerá en
+            Pendientes de definir hasta que elijas una opción.
+          </p>
+          <div className="next-step-grid">
+            <button
+              className="button button--secondary"
+              disabled={busy}
+              onClick={() => execute({ type: "nextStep", step: "MANUAL", leadId: lead.id, version: lead.version })}
+            >
+              Seguir conversación manualmente
+            </button>
+            <button
+              className="button button--secondary"
+              disabled={busy}
+              onClick={() => execute({ type: "nextStep", step: "ESTUDIO", leadId: lead.id, version: lead.version })}
+            >
+              Enviar estudio de perfil
+            </button>
+            <button
+              className="button button--secondary"
+              disabled={busy}
+              onClick={() => execute({ type: "nextStep", step: "ASESORIA", leadId: lead.id, version: lead.version })}
+            >
+              Ofrecer asesoría personalizada
+            </button>
+            <button
+              className="button button--secondary"
+              disabled={busy}
+              onClick={() => execute({ type: "nextStep", step: "INFORMACION", leadId: lead.id, version: lead.version })}
+            >
+              Enviar información / precios
+            </button>
+            <button
+              className="button button--ghost"
+              disabled={busy}
+              onClick={() => setPanel("reschedule")}
+            >
+              Reprogramar seguimiento
+            </button>
+            <button
+              className="button button--ghost"
+              disabled={busy}
+              onClick={() => execute({ type: "status", estado: "INTERESADO", leadId: lead.id, version: lead.version })}
+            >
+              Marcar como interesado
+            </button>
+            <button
+              className="button button--success"
+              disabled={busy}
+              onClick={() => execute({ type: "status", estado: "CLIENTE", leadId: lead.id, version: lead.version })}
+            >
+              Marcar como cliente
+            </button>
+            <button
+              className="button button--ghost"
+              disabled={busy}
+              onClick={() => execute({ type: "status", estado: "NO_APTO", leadId: lead.id, version: lead.version })}
+            >
+              Marcar como no apto
+            </button>
+            <button
+              className="button button--ghost"
+              disabled={busy}
+              onClick={() => execute({ type: "status", estado: "INACTIVO", leadId: lead.id, version: lead.version })}
+            >
+              Marcar como inactivo
+            </button>
+          </div>
+        </section>
+      )}
       <div className="message-box">
         <div className="message-box__title">
           {message?.titulo ?? "Sin mensaje pendiente"}{" "}
@@ -132,7 +216,7 @@ export function LeadCard({ lead }: { lead: Lead }) {
         </button>
         <button
           className="button button--ghost"
-          disabled={busy || isClosed(lead)}
+          disabled={busy || isClosed(lead) || pendingDefinition}
           onClick={() =>
             execute({ type: "replied", leadId: lead.id, version: lead.version })
           }
@@ -152,6 +236,22 @@ export function LeadCard({ lead }: { lead: Lead }) {
         >
           Ver ficha
         </button>
+        {undoable && (
+          <button
+            className="button button--undo"
+            disabled={busy}
+            onClick={() =>
+              execute({
+                type: "undo",
+                leadId: lead.id,
+                version: lead.version,
+                interactionId: undoable.id,
+              })
+            }
+          >
+            Deshacer última acción
+          </button>
+        )}
       </div>
       {panel === "sent" && (
         <Modal title="Confirmar mensaje enviado" close={() => setPanel(null)}>

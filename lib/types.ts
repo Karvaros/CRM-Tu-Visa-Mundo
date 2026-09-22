@@ -11,7 +11,12 @@ export const leadStatuses = [
   "INACTIVO",
 ] as const;
 export type LeadStatus = (typeof leadStatuses)[number];
-export type LeadPriority = "NUEVO" | "ATRASADO" | "HOY" | "MANUAL";
+export type LeadPriority =
+  | "PENDIENTE_DEFINIR"
+  | "NUEVO"
+  | "ATRASADO"
+  | "HOY"
+  | "MANUAL";
 export const messageSegments = [
   "SIN_ESTUDIO",
   "ESTUDIO_A",
@@ -70,6 +75,24 @@ export interface Message {
   requiereRevision: boolean;
   observaciones: string[];
 }
+export type LeadOperationalSnapshot = Pick<
+  Lead,
+  | "estado"
+  | "ultimoContacto"
+  | "ultimoMensajeId"
+  | "proximoContacto"
+  | "proximoContactoExacto"
+  | "proximaAccion"
+  | "proximoMensajeId"
+  | "seguimientoManual"
+  | "secuenciaPausada"
+  | "secuenciaId"
+  | "segmento"
+  | "tipoEstudio"
+  | "perfilEstudio"
+  | "primerEstudioId"
+  | "fechaPrimerEstudio"
+>;
 export interface Interaction {
   id: string;
   leadId: string;
@@ -78,6 +101,9 @@ export interface Interaction {
     | "RESPONDIO"
     | "REPROGRAMADO"
     | "ESTADO"
+    | "SIGUIENTE_PASO"
+    | "ACCION_DESHECHA"
+    | "SEGUIMIENTO_RESTAURADO"
     | "ESTUDIO_CLASIFICADO"
     | "ESTUDIO_REPETIDO";
   fecha: string;
@@ -86,6 +112,9 @@ export interface Interaction {
   mensajeTexto?: string;
   asesor?: string;
   eventoExternoId?: string;
+  undoSnapshot?: LeadOperationalSnapshot;
+  undoLabel?: string;
+  undoneInteractionId?: string;
 }
 export interface StudyClassification {
   leadId: string;
@@ -102,5 +131,10 @@ export type LeadCommand = { leadId: string; version: number } & (
   | { type: "sent"; mensajeId: string; mensajeTexto: string }
   | { type: "replied" }
   | { type: "reschedule"; fecha: string; accion: string }
+  | {
+      type: "nextStep";
+      step: "MANUAL" | "ESTUDIO" | "ASESORIA" | "INFORMACION";
+    }
   | { type: "status"; estado: LeadStatus }
+  | { type: "undo"; interactionId: string }
 );
