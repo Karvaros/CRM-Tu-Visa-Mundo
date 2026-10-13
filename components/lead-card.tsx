@@ -11,6 +11,7 @@ import {
 import { leadStatuses, type Lead, type LeadStatus } from "@/lib/types";
 import { useCrm } from "./crm-provider";
 import { Modal } from "./modal";
+import { whatsappUrl } from "@/lib/whatsapp";
 
 export function LeadCard({ lead }: { lead: Lead }) {
   const { data, date, clock, busy, execute, notify } = useCrm();
@@ -200,11 +201,17 @@ export function LeadCard({ lead }: { lead: Lead }) {
         ) : (
           <a
             className="button button--primary"
-            href={`https://wa.me/${lead.whatsapp.replace(/\D/g, "")}${text ? `?text=${encodeURIComponent(text)}` : ""}`}
+            href={whatsappUrl(lead.whatsapp, text)}
             target="_blank"
             rel="noreferrer"
+            onClick={(event) => {
+              if (/Android/i.test(navigator.userAgent)) {
+                event.preventDefault();
+                window.location.assign(whatsappUrl(lead.whatsapp, text, navigator.userAgent));
+              }
+            }}
           >
-            Abrir WhatsApp
+            Abrir WhatsApp Business
           </a>
         )}
         <button

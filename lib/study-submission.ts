@@ -3,6 +3,8 @@ import { classifyStudy } from "./study-scoring";
 import type { StudyClaim, StoredProfile, createStudyStore } from "./study-store";
 import type { createActiveCampaign } from "./activecampaign";
 import type { Message } from "./types";
+import { studySequenceForDestination } from "./message-sequences";
+import type { LeadRow } from "./study-store";
 
 type Store = ReturnType<typeof createStudyStore>;
 type Campaign = ReturnType<typeof createActiveCampaign>;
@@ -56,7 +58,7 @@ function leadFields(claim: StudyClaim) {
 
 export function createStudySubmission(options: {
   store: Store; campaign: Campaign; now?: () => Date; uuid?: () => string;
-  selectWhatsApp?: (destination: string, profile: StoredProfile) => Promise<Message | undefined>;
+  selectWhatsApp?: (destination: string, profile: StoredProfile, lead?: LeadRow) => Promise<Message | undefined>;
 }) {
   const { store, campaign, now = () => new Date(), uuid = () => crypto.randomUUID(), selectWhatsApp } = options;
 
@@ -107,9 +109,9 @@ export function createStudySubmission(options: {
     const preserveManual = Boolean(originalLead && (["CLIENTE", "NO_APTO", "INACTIVO"].includes(String(originalLead.ESTADO))
       || originalLead.SEGUIMIENTO_MANUAL === true || originalLead.ESTADO === "EN_CONVERSACION"));
     if (!preserveManual && ["A", "B", "C"].includes(claim.perfil) && selectWhatsApp) {
-      const next = await selectWhatsApp(claim.answers.destino!, claim.perfil);
+      const next = await selectWhatsApp(claim.answers.destino!, claim.perfil, originalLead ?? undefined);
       if (next && !next.requiereRevision) {
-        baseFields.SECUENCIA_ID = next.secuenciaId;
+        baseFields.SECUENCIA_ID = studySequenceForDestination(claim.answers.destino!) ?? next.secuenciaId;
         baseFields.PROXIMO_MENSAJE = [Number(next.id)];
         baseFields.SECUENCIA_PAUSADA = false;
         baseFields.SEGUIMIENTO_MANUAL = false;

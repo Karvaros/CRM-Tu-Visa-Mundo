@@ -389,7 +389,7 @@ export function CrmView({ view }: { view: string }) {
               if (response.ok) window.location.reload();
               else window.alert("No se pudieron asignar los mensajes pendientes.");
             }}
-          >Asignar resultado a estudios anteriores de Canadá</button>}
+          >Recuperar presentación de estudios sin WhatsApp enviado</button>}
           {realData && <form onSubmit={async (event) => {
             event.preventDefault();
             setRecoveryNotice("Sincronizando inscripción…");

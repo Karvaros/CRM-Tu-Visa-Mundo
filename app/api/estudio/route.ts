@@ -3,7 +3,7 @@ import { createStudyStore } from "@/lib/study-store";
 import { createStudySubmission } from "@/lib/study-submission";
 import { studyAutomations, studyFields, studyTableIds } from "@/lib/study-config";
 import { createConfiguredBaserowReader } from "@/lib/baserow-server";
-import { firstStudyMessage } from "@/lib/message-sequences";
+import { confirmedWhatsAppMessageIds, firstStudyMessage } from "@/lib/message-sequences";
 import { publicRateLimited } from "@/lib/public-rate-limit";
 
 export const runtime = "nodejs";
@@ -45,9 +45,11 @@ export async function POST(request: Request) {
       automations: studyAutomations(), fields: studyFields(),
     });
     const submit = createStudySubmission({ store, campaign,
-      async selectWhatsApp(destination, profile) {
+      async selectWhatsApp(destination, profile, originalLead) {
         const data = await createConfiguredBaserowReader().load();
-        return firstStudyMessage(data.mensajes, destination, profile);
+        const lead = data.leads.find((item) => item.id === String(originalLead?.id));
+        return firstStudyMessage(data.mensajes, destination, profile,
+          lead ? confirmedWhatsAppMessageIds(data, lead) : []);
       },
     });
     const result = await submit(payload);

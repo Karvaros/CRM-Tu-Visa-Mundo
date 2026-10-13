@@ -4,6 +4,9 @@ import { createActiveCampaign } from "../lib/activecampaign";
 import { createStudyStore } from "../lib/study-store";
 import { createStudySubmission, validateStudyAnswers } from "../lib/study-submission";
 import { studyOptions, type StudyAnswers } from "../lib/study";
+import { firstStudyMessage } from "../lib/message-sequences";
+import { createMockData } from "../lib/mock-data";
+import type { LeadRow } from "../lib/study-store";
 
 const answers: StudyAnswers = {
   destino: studyOptions.destino[0], grupo: studyOptions.grupo[0], solicitud: "Renovación",
@@ -22,6 +25,41 @@ test("valida en el servidor y normaliza el correo", () => {
   assert.equal(validateStudyAnswers(answers).email, "ana@example.com");
   assert.throws(() => validateStudyAnswers({ ...answers, pasaportes: "opción inventada" }), /pasaportes/);
   assert.throws(() => validateStudyAnswers({ ...answers, telefono: "123" }), /teléfono válido/);
+});
+
+test("un estudio nuevo o después del formulario asigna día cero y conserva la secuencia posestudio", async () => {
+  type Claim = NonNullable<Awaited<ReturnType<ReturnType<typeof createStudyStore>["findClaim"]>>>;
+  for (const afterForm of [false, true]) {
+    let claim: Claim | null = null;
+    let lead: LeadRow | null = afterForm ? { id: 8, EMAIL: "ana@example.com", ESTADO: "NUEVO",
+      SECUENCIA_ID: "sin-estudio-canada", PROXIMO_MENSAJE: [12], VERSION: 1 } : null;
+    const store = {
+      async findLead() { return lead; }, async findClaim() { return claim; },
+      async claimFirst(value: Claim) { claim = { ...value, rowId: 1 }; return { claim, created: true }; },
+      async createLead(fields: Record<string, unknown>) { lead = { id: 8, ...fields }; return lead; },
+      async updateLead(_id: number, fields: Record<string, unknown>) { lead = { ...lead!, ...fields }; return lead; },
+      async linkClaim() {}, async updateClaim(value: Claim) { claim = value; },
+    } as unknown as ReturnType<typeof createStudyStore>;
+    const campaign = {
+      automationForOutcome() { return 301; }, async findContact() { return null; },
+      async syncContact() { return { id: "700" }; }, async startStudyAutomation() {},
+    } as unknown as ReturnType<typeof createActiveCampaign>;
+    const messages = createMockData("2026-09-17").mensajes.map((item, index) => ({ ...item, id: String(index + 1) }));
+    const intro = firstStudyMessage(messages, "Canadá", "A")!;
+    const submit = createStudySubmission({ store, campaign, now: () => new Date("2026-09-17T12:00:00Z"),
+      uuid: () => "first", async selectWhatsApp(destination, profile, originalLead) {
+        assert.equal(originalLead?.id, afterForm ? 8 : undefined);
+        return firstStudyMessage(messages, destination, profile);
+      } });
+    assert.deepEqual(await submit(answers), { perfil: "A", status: "SENT" });
+    const saved = lead as LeadRow | null;
+    assert.equal(saved?.SECUENCIA_ID, "estudio-canada");
+    assert.deepEqual(saved?.PROXIMO_MENSAJE, [Number(intro.id)]);
+    assert.equal(saved?.SECUENCIA_PAUSADA, false);
+    assert.equal(saved?.SEGUIMIENTO_MANUAL, false);
+    assert.equal(saved?.ULTIMO_CONTACTO, undefined);
+    assert.equal(saved?.PROXIMA_ACCION, "Bienvenida Canadá");
+  }
 });
 
 test("guarda la primera clasificación y dispara solo su automatización de ActiveCampaign", async () => {

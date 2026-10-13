@@ -11,7 +11,7 @@ No hace falta reunirlos todos ahora. Cuando se retome un mensaje, pedir únicame
 3. **Comparación Basic/Premium (Canadá):** texto y enlace del video «Beneficios del Plan Basic», o confirmación de que ese video no se incluirá. El enlace de la página comparativa ya existe.
 4. **Oferta del 25 % (Canadá):** duración del descuento contada desde el envío, tratamiento de fines de semana e imagen que acompañará el mensaje. La fecha exacta se calculará al enviarlo.
 5. **Artículo en Perfil (Reino Unido):** confirmar el enlace específico antes de habilitar ese mensaje.
-6. **Bienvenida posestudio (Canadá):** confirmar si se elimina o se reescribe; el texto actual habla de registro y por eso está bloqueado. La secuencia activa entra directamente por el resultado A/B/C.
+6. **Bienvenida posestudio (Canadá):** se conserva bloqueada para revisión. Desde el 13 de octubre, un lead sin WhatsApp confirmado recibe primero la presentación editable de día 0 de su destino. El lead conserva su secuencia ESTUDIO para continuar con su resultado A/B/C al confirmar el envío.
 7. **Australia, Estados Unidos y Reino Unido después de testimonios:** aportar o aprobar los próximos mensajes y sus recursos. Por ahora esas secuencias terminan en testimonios.
 
 La revisión individual de estudios antiguos en atención manual y las equivalencias entre hitos son tareas de configuración del CRM, no datos que el propietario tenga que buscar.
@@ -42,7 +42,7 @@ Antes de habilitarlo falta definir:
 
 ## Nombre del asesor
 
-Las referencias a Augusto se conservan porque representan el nombre del asesor que envía el mensaje. Esto es independiente de la prohibición de usar el nombre del destinatario en mensajes de difusión. Cuando se implemente multiusuario, el nombre del asesor deberá provenir del campo `ASESOR` o de la configuración de la sesión.
+Por indicación del propietario, desde el 13 de octubre las plantillas utilizan Lina Osorio como nombre de la asesora. Esto es independiente de la prohibición de usar el nombre del destinatario en mensajes de difusión. Los mensajes históricos enviados no se reescriben. Cuando se implemente multiusuario, el nombre del asesor deberá provenir del campo `ASESOR` o de la configuración de la sesión.
 
 ## Estudio gratuito y estudio pago
 
@@ -54,9 +54,9 @@ Las referencias a Augusto se conservan porque representan el nombre del asesor q
 
 ## Paso de SIN ESTUDIO a A/B/C
 
-La bienvenida del grupo ESTUDIO no debe repetirse cuando el lead ya recorrió SIN ESTUDIO.
+La presentación se omite solamente cuando existe un WhatsApp confirmado. No se infiere contacto previo por inscribirse o completar el estudio.
 
-- ActiveCampaign envía el resultado del estudio por correo; ese correo no cuenta como WhatsApp enviado. El CRM entra por el mensaje 2: Alto para A, Medio Alto para B o Medio para C.
+- ActiveCampaign envía el resultado del estudio por correo; ese correo no cuenta como WhatsApp enviado. Sin contacto previo, el CRM empieza por la presentación del día 0 y después programa el resultado de su perfil desde el envío real. Con presentación ya confirmada, entra por el mensaje 2: Alto para A, Medio Alto para B o Medio para C.
 - Solo si existe una confirmación de envío del resultado por WhatsApp en INTERACCIONES, el CRM entra por el mensaje 3.
 - Si ya se confirmó el envío de testimonios en SIN ESTUDIO, se omite el mismo hito en ESTUDIO.
 - La primera respuesta válida fija la clasificación del lead. Un estudio posterior se registra como repetido, pero no cambia A/B/C, no reinicia la secuencia y no vuelve a enviar el resultado.
