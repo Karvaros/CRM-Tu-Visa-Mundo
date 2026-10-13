@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { dateLabel, TIME_ZONE } from "@/lib/dates";
-import { priority } from "@/lib/crm";
+import { matchesLeadFilter, priority } from "@/lib/crm";
 import { leadStatuses, type Lead, type LeadPriority, type Message } from "@/lib/types";
 import { useCrm } from "./crm-provider";
 import { LeadCard } from "./lead-card";
@@ -65,7 +65,7 @@ export function CrmView({ view }: { view: string }) {
   const dueKind = (lead: Lead) =>
     priority(lead, date, new Date(clock || Date.now()));
   const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState("");
+  const [filter, setFilter] = useState("PENDIENTES_HOY");
   const [destination, setDestination] = useState("");
   const [agendaFilter, setAgendaFilter] = useState("");
   const [messageSequence, setMessageSequence] = useState("");
@@ -87,7 +87,7 @@ export function CrmView({ view }: { view: string }) {
         .toLocaleLowerCase("es")
         .includes(search.toLocaleLowerCase("es")) &&
       (!destination || destinationName(lead.destino) === destination) &&
-      (view !== "leads" || !filter || lead.estado === filter),
+      (view !== "leads" || matchesLeadFilter(lead, filter, date, new Date(clock || Date.now()))),
   );
   const due = leads.filter((lead) => {
     const kind = dueKind(lead);
@@ -162,7 +162,7 @@ export function CrmView({ view }: { view: string }) {
             <label>
               Tipo de pendiente
               <select value={agendaFilter} onChange={(event) => setAgendaFilter(event.target.value)}>
-                <option value="">Todos los pendientes</option>
+                <option value="">Pendientes hoy</option>
                 <option value="PENDIENTE_DEFINIR">Pendientes de definir</option>
                 <option value="NUEVO">Nuevos</option>
                 <option value="SEGUIMIENTOS">Todos los seguimientos</option>
@@ -173,6 +173,7 @@ export function CrmView({ view }: { view: string }) {
               Estado
               <select value={filter} onChange={(event) => setFilter(event.target.value)}>
                 <option value="">Todos los estados</option>
+                <option value="PENDIENTES_HOY">Pendientes hoy</option>
                 {leadStatuses.map((status) => (
                   <option key={status} value={status}>
                     {status.replaceAll("_", " ").replace("CONVERSACION", "CONVERSACIÓN")}
@@ -232,14 +233,27 @@ export function CrmView({ view }: { view: string }) {
         </>
       )}
       {view === "leads" && (
-        <div className="lead-list">
-          {leads.map((lead) => (
-            <LeadCard key={lead.id} lead={lead} />
-          ))}
-          {!leads.length && (
-            <p className="empty-state">No se encontraron leads.</p>
+        <>
+          {filter === "PENDIENTES_HOY" && (
+            <p className="demo-note" role="status">
+              <strong>Pendientes hoy: {leads.length}.</strong>{" "}
+              Nuevos, estudios, conversaciones y seguimientos que requieren atención hoy o están vencidos.
+              Incluye los pendientes de definir.
+            </p>
           )}
-        </div>
+          <div className="lead-list">
+            {leads.map((lead) => (
+              <LeadCard key={lead.id} lead={lead} />
+            ))}
+            {!leads.length && (
+              <p className="empty-state">
+                {filter === "PENDIENTES_HOY"
+                  ? "No hay pendientes hoy para esta selección."
+                  : "No se encontraron leads."}
+              </p>
+            )}
+          </div>
+        </>
       )}
       {view === "pipeline" && (
         <div className="pipeline">

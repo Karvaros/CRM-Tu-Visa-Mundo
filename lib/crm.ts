@@ -37,6 +37,16 @@ export function priority(lead: Lead, date: string, now = new Date()): LeadPriori
   return lead.proximoContacto < date ? "ATRASADO" : "HOY";
 }
 
+export function matchesLeadFilter(
+  lead: Lead,
+  filter: string,
+  date: string,
+  now = new Date(),
+): boolean {
+  if (filter === "PENDIENTES_HOY") return priority(lead, date, now) !== null;
+  return !filter || lead.estado === filter;
+}
+
 const snapshotFields = [
   "estado",
   "ultimoContacto",

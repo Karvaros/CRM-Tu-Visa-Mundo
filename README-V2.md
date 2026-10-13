@@ -21,6 +21,7 @@ El formulario definitivo enviará las respuestas primero al servidor de Next.js,
 ## Reglas implementadas
 
 - Las prioridades son derivadas de fecha, estado y modalidad, no un campo persistido.
+- LEADS abre con “Pendientes hoy” en el selector Estado: reúne todos los grupos de HOY, incluidos vencidos, manuales y pendientes de definir, y se combina con país y búsqueda. Conserva “Todos los estados” y cada estado individual para consultar también futuros y cerrados. HOY identifica su selección inicial también como “Pendientes hoy”. Reutiliza la prioridad de HOY, incluida la espera inicial de 30 minutos; no cambia estados ni fechas.
 - Nuevos y seguimientos se muestran cuando su fecha es hoy o anterior. Los manuales vencidos se incluyen en Manuales. Los contadores generales no cambian al filtrar; cada sección muestra el resultado filtrado.
 - Abrir WhatsApp/copiar no altera datos. Solo confirmar envío registra fecha/hora, texto exacto, asesor y siguiente paso. El siguiente contacto se calcula desde ese envío real; el intervalo es por paso, no acumulado desde el ingreso.
 - Si la plantilla lo indica, un contacto que cae en sábado/domingo pasa al lunes. No se modelan feriados. Zona horaria explícita: Buenos Aires.

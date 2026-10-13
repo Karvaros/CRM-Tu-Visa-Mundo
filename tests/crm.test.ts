@@ -6,6 +6,8 @@ import {
   isPendingDefinition,
   latestUndoableInteraction,
   leadOperationalSnapshot,
+  matchesLeadFilter,
+  PENDING_DEFINITION_ACTION,
   priority,
   renderMessage,
 } from "../lib/crm";
@@ -44,6 +46,47 @@ test("agenda clasifica los cuatro grupos y excluye fechas futuras, pausados y ce
   );
   for (const estado of ["CLIENTE", "NO_APTO", "INACTIVO"] as const)
     assert.equal(priority({ ...leads[3], estado }, "2026-09-14"), null);
+});
+
+test("Pendientes hoy reúne estados activos y conversaciones sin siguiente paso", () => {
+  const { leads } = seed();
+  const active = [
+    "NUEVO", "CONTACTADO", "SEGUIMIENTO", "ESTUDIO_GRATUITO",
+    "ESTUDIO_PERSONALIZADO", "INTERESADO",
+  ] as const;
+  for (const estado of active) {
+    assert.equal(matchesLeadFilter({ ...leads[0], estado }, "PENDIENTES_HOY", "2026-09-14", now), true);
+  }
+  assert.equal(matchesLeadFilter(leads[1], "PENDIENTES_HOY", "2026-09-14", now), true);
+  assert.equal(matchesLeadFilter(leads[3], "PENDIENTES_HOY", "2026-09-14", now), true);
+  assert.equal(matchesLeadFilter({
+    ...leads[3], proximoContacto: undefined, proximaAccion: PENDING_DEFINITION_ACTION,
+  }, "PENDIENTES_HOY", "2026-09-14", now), true);
+});
+
+test("Pendientes hoy respeta fechas, espera inicial y cierre de seguimiento", () => {
+  const { leads } = seed();
+  assert.equal(matchesLeadFilter({ ...leads[0], proximoContacto: "2026-09-15" }, "PENDIENTES_HOY", "2026-09-14", now), false);
+  assert.equal(matchesLeadFilter({ ...leads[3], proximoContacto: "2026-09-15" }, "PENDIENTES_HOY", "2026-09-14", now), false);
+  assert.equal(matchesLeadFilter({ ...leads[0], secuenciaPausada: true }, "PENDIENTES_HOY", "2026-09-14", now), false);
+  assert.equal(matchesLeadFilter({ ...leads[0], proximoContacto: undefined }, "PENDIENTES_HOY", "2026-09-14", now), false);
+  const waiting = { ...leads[0], proximoContactoExacto: "2026-09-14T16:00:00Z" };
+  assert.equal(matchesLeadFilter(waiting, "PENDIENTES_HOY", "2026-09-14", now), false);
+  assert.equal(matchesLeadFilter(waiting, "PENDIENTES_HOY", "2026-09-14", new Date("2026-09-14T16:00:00Z")), true);
+  for (const estado of ["CLIENTE", "NO_APTO", "INACTIVO"] as const) {
+    assert.equal(matchesLeadFilter({ ...leads[3], estado }, "PENDIENTES_HOY", "2026-09-14", now), false);
+  }
+});
+
+test("Todos los estados y filtros individuales conservan futuros y cerrados", () => {
+  const { leads } = seed();
+  const future = { ...leads[0], proximoContacto: "2026-09-20" };
+  assert.equal(matchesLeadFilter(future, "", "2026-09-14", now), true);
+  assert.equal(matchesLeadFilter(future, "NUEVO", "2026-09-14", now), true);
+  assert.equal(matchesLeadFilter(future, "ESTUDIO_GRATUITO", "2026-09-14", now), false);
+  const closed = { ...leads[0], estado: "INACTIVO" as const };
+  assert.equal(matchesLeadFilter(closed, "", "2026-09-14", now), true);
+  assert.equal(matchesLeadFilter(closed, "INACTIVO", "2026-09-14", now), true);
 });
 test("envío atrasado calcula desde hoy, guarda texto real y no muta entrada", () => {
   const data = seed();
