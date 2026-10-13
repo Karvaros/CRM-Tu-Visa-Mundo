@@ -6,6 +6,7 @@ import {
   isPendingDefinition,
   latestUndoableInteraction,
   leadOperationalSnapshot,
+  matchesAgendaFilter,
   matchesLeadFilter,
   PENDING_DEFINITION_ACTION,
   priority,
@@ -87,6 +88,31 @@ test("Todos los estados y filtros individuales conservan futuros y cerrados", ()
   const closed = { ...leads[0], estado: "INACTIVO" as const };
   assert.equal(matchesLeadFilter(closed, "", "2026-09-14", now), true);
   assert.equal(matchesLeadFilter(closed, "INACTIVO", "2026-09-14", now), true);
+});
+
+test("HOY permite filtrar estudios por estado aunque tengan seguimiento manual", () => {
+  const { leads } = seed();
+  const study = { ...leads[3], estado: "ESTUDIO_GRATUITO" as const };
+  assert.equal(priority(study, "2026-09-14", now), "MANUAL");
+  assert.equal(matchesAgendaFilter(study, "ESTADO:ESTUDIO_GRATUITO", "2026-09-14", now), true);
+  assert.equal(matchesAgendaFilter(study, "MANUAL", "2026-09-14", now), true);
+  assert.equal(matchesAgendaFilter(study, "ESTADO:SEGUIMIENTO", "2026-09-14", now), false);
+  for (const estado of ["NUEVO", "CONTACTADO", "EN_CONVERSACION", "SEGUIMIENTO", "ESTUDIO_GRATUITO", "ESTUDIO_PERSONALIZADO", "INTERESADO"] as const) {
+    assert.equal(matchesAgendaFilter({ ...leads[0], estado }, `ESTADO:${estado}`, "2026-09-14", now), true);
+  }
+  assert.equal(matchesAgendaFilter({ ...study, proximoContacto: "2026-09-15" }, "ESTADO:ESTUDIO_GRATUITO", "2026-09-14", now), false);
+});
+
+test("HOY conserva filtros por vencimiento, manuales y pendientes de definir", () => {
+  const { leads } = seed();
+  assert.deepEqual(leads.map((lead) => matchesAgendaFilter(lead, "", "2026-09-14", now)), [true, true, true, true]);
+  assert.deepEqual(leads.map((lead) => matchesAgendaFilter(lead, "SEGUIMIENTOS", "2026-09-14", now)), [false, true, true, true]);
+  assert.equal(matchesAgendaFilter(leads[1], "ATRASADO", "2026-09-14", now), true);
+  assert.equal(matchesAgendaFilter(leads[2], "HOY", "2026-09-14", now), true);
+  const pending = { ...leads[3], proximoContacto: undefined, proximaAccion: PENDING_DEFINITION_ACTION };
+  assert.equal(matchesAgendaFilter(pending, "PENDIENTE_DEFINIR", "2026-09-14", now), true);
+  assert.equal(matchesAgendaFilter(pending, "ESTADO:EN_CONVERSACION", "2026-09-14", now), true);
+  assert.equal(matchesAgendaFilter({ ...pending, estado: "INACTIVO" }, "ESTADO:INACTIVO", "2026-09-14", now), false);
 });
 test("envío atrasado calcula desde hoy, guarda texto real y no muta entrada", () => {
   const data = seed();

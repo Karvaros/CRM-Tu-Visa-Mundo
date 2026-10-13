@@ -47,6 +47,20 @@ export function matchesLeadFilter(
   return !filter || lead.estado === filter;
 }
 
+export function matchesAgendaFilter(
+  lead: Lead,
+  filter: string,
+  date: string,
+  now = new Date(),
+): boolean {
+  const kind = priority(lead, date, now);
+  if (!kind) return false;
+  if (filter.startsWith("ESTADO:")) return lead.estado === filter.slice(7);
+  if (filter === "SEGUIMIENTOS")
+    return ["ATRASADO", "HOY", "MANUAL"].includes(kind);
+  return !filter || kind === filter;
+}
+
 const snapshotFields = [
   "estado",
   "ultimoContacto",

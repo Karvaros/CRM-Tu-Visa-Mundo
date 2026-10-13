@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { dateLabel, TIME_ZONE } from "@/lib/dates";
-import { matchesLeadFilter, priority } from "@/lib/crm";
+import { matchesAgendaFilter, matchesLeadFilter, priority } from "@/lib/crm";
 import { leadStatuses, type Lead, type LeadPriority, type Message } from "@/lib/types";
 import { useCrm } from "./crm-provider";
 import { LeadCard } from "./lead-card";
@@ -45,13 +45,6 @@ function destinationName(value: string) {
   return value.trim();
 }
 
-function matchesAgendaFilter(kind: LeadPriority, filter: string) {
-  if (!filter) return true;
-  if (filter === "SEGUIMIENTOS")
-    return ["ATRASADO", "HOY", "MANUAL"].includes(kind);
-  return kind === filter;
-}
-
 const titles: Record<string, string> = {
   hoy: "Hoy",
   leads: "Leads",
@@ -89,10 +82,16 @@ export function CrmView({ view }: { view: string }) {
       (!destination || destinationName(lead.destino) === destination) &&
       (view !== "leads" || matchesLeadFilter(lead, filter, date, new Date(clock || Date.now()))),
   );
-  const due = leads.filter((lead) => {
-    const kind = dueKind(lead);
-    return kind && matchesAgendaFilter(kind, agendaFilter);
-  });
+  const due = leads.filter((lead) =>
+    matchesAgendaFilter(lead, agendaFilter, date, new Date(clock || Date.now())),
+  );
+  const agendaSections = view === "hoy" ? sections.map((section) => ({
+    ...section,
+    items: due.filter((lead) => dueKind(lead) === section.key)
+      .sort((a, b) => (a.proximoContacto ?? "").localeCompare(b.proximoContacto ?? "")),
+  })).filter((section) =>
+    due.length > 0 && (!(search || destination || agendaFilter) || section.items.length > 0),
+  ).sort((a, b) => Number(b.items.length > 0) - Number(a.items.length > 0)) : [];
   return (
     <>
       <header className="page-header">
@@ -163,9 +162,20 @@ export function CrmView({ view }: { view: string }) {
               Tipo de pendiente
               <select value={agendaFilter} onChange={(event) => setAgendaFilter(event.target.value)}>
                 <option value="">Pendientes hoy</option>
-                <option value="PENDIENTE_DEFINIR">Pendientes de definir</option>
-                <option value="NUEVO">Nuevos</option>
-                <option value="SEGUIMIENTOS">Todos los seguimientos</option>
+                <optgroup label="Estado del lead">
+                  {leadStatuses.filter((status) => !["CLIENTE", "NO_APTO", "INACTIVO"].includes(status)).map((status) => (
+                    <option key={status} value={`ESTADO:${status}`}>
+                      {status.replaceAll("_", " ").replace("CONVERSACION", "CONVERSACIÓN")}
+                    </option>
+                  ))}
+                </optgroup>
+                <optgroup label="Tipo de seguimiento">
+                  <option value="PENDIENTE_DEFINIR">Pendientes de definir</option>
+                  <option value="SEGUIMIENTOS">Todos los seguimientos</option>
+                  <option value="ATRASADO">Seguimientos vencidos</option>
+                  <option value="HOY">Seguimientos de hoy</option>
+                  <option value="MANUAL">Seguimientos manuales</option>
+                </optgroup>
               </select>
             </label>
           ) : (
@@ -196,17 +206,7 @@ export function CrmView({ view }: { view: string }) {
               </p>
             </div>
           )}
-          {sections.filter((section) =>
-            matchesAgendaFilter(section.key, agendaFilter) &&
-            (!(search || destination || agendaFilter) || due.some((lead) => dueKind(lead) === section.key)),
-          ).map((section) => {
-            const items = due
-              .filter((lead) => dueKind(lead) === section.key)
-              .sort((a, b) =>
-                (a.proximoContacto ?? "").localeCompare(
-                  b.proximoContacto ?? "",
-                ),
-              );
+          {agendaSections.map(({ items, ...section }) => {
             return (
               <section className="agenda-section" key={section.key}>
                 <div className="section-heading">
