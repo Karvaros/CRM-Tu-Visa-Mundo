@@ -21,6 +21,7 @@ function validCommand(value: unknown): value is LeadCommand {
   if (!/^\d+$/.test(String(command.leadId)) || !Number.isSafeInteger(command.version)) return false;
   if (command.type === "sent") return /^\d+$/.test(String(command.mensajeId)) && typeof command.mensajeTexto === "string";
   if (command.type === "replied") return true;
+  if (command.type === "reconcileStatus") return true;
   if (command.type === "note") return typeof command.texto === "string" && command.texto.length <= 5000;
   if (command.type === "reschedule") return typeof command.fecha === "string" && typeof command.accion === "string" && command.accion.length <= 500;
   if (command.type === "nextStep") return ["MANUAL", "ESTUDIO", "ASESORIA", "INFORMACION"].includes(String(command.step));
@@ -48,6 +49,7 @@ export async function POST(request: Request) {
     if (Number(request.headers.get("content-length")) > 10000) throw new Error("Solicitud demasiado grande.");
     const command: unknown = await request.json();
     if (!validCommand(command)) throw new Error("Acción inválida.");
+    if (command.type === "reconcileStatus" && user.role !== "admin") return new Response(null, { status: 403 });
     return Response.json(await createConfiguredBaserowCrmWriter().execute(command, user.displayName), { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     return failure(error);

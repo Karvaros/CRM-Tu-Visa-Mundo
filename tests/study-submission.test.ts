@@ -21,6 +21,35 @@ const automations = { PERFIL_ALTO_RENOVACION: 301, PERFIL_ALTO_PRIMERA_VEZ: 302,
 const fields = { destino: 401, grupo: 402, solicitud: 403, pasaportes: 404,
   ocupacion: 405, visaAnterior: 406, viajes: 407, cumplimiento: 408, lazos: 409 };
 
+test("hacer el estudio conserva Contactado y las decisiones del asesor, y no reemplaza el estado por el estudio", async () => {
+  type Claim = NonNullable<Awaited<ReturnType<ReturnType<typeof createStudyStore>["findClaim"]>>>;
+  for (const estado of ["NUEVO", "CONTACTADO", "EN_CONVERSACION", "INTERESADO"] as const) {
+    let claim: Claim | null = null;
+    let lead: LeadRow = { id: 8, EMAIL: "ana@example.com", ESTADO: estado, VERSION: 1,
+      ...(estado === "NUEVO" ? {} : { ULTIMO_CONTACTO: "2026-09-16T15:00:00Z" }),
+      PROXIMO_CONTACTO: "2026-09-18T15:00:00Z", PROXIMA_ACCION: "Acción existente" };
+    const store = {
+      async findLead() { return lead; }, async findClaim() { return claim; },
+      async claimFirst(value: Claim) { claim = { ...value, rowId: 1 }; return { claim, created: true }; },
+      async updateLead(_id: number, fields: Record<string, unknown>) { lead = { ...lead, ...fields }; return lead; },
+      async linkClaim() {}, async updateClaim(value: Claim) { claim = value; },
+    } as unknown as ReturnType<typeof createStudyStore>;
+    const campaign = { automationForOutcome() { return 301; }, async findContact() { return null; },
+      async syncContact() { return { id: "700" }; }, async startStudyAutomation() {} } as unknown as ReturnType<typeof createActiveCampaign>;
+    const submit = createStudySubmission({ store, campaign, uuid: () => "first",
+      selectWhatsApp: async () => undefined });
+    await submit(answers);
+    assert.equal(lead.ESTADO, estado);
+    assert.equal(lead.TIPO_ESTUDIO, "GRATUITO");
+    assert.equal(lead.PERFIL_ESTUDIO, "A");
+    if (["EN_CONVERSACION", "INTERESADO"].includes(estado)) {
+      assert.equal(lead.PROXIMA_ACCION, "Acción existente");
+      assert.equal(lead.PROXIMO_CONTACTO, "2026-09-18T15:00:00Z");
+      assert.equal(lead.SECUENCIA_PAUSADA, true);
+    }
+  }
+});
+
 test("valida en el servidor y normaliza el correo", () => {
   assert.equal(validateStudyAnswers(answers).email, "ana@example.com");
   assert.throws(() => validateStudyAnswers({ ...answers, pasaportes: "opción inventada" }), /pasaportes/);

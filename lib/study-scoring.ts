@@ -7,7 +7,7 @@ function outcome(perfil: "A" | "B" | "C" | "D", correo: string, motivo: string):
     perfil, correo, motivo,
     crm: perfil === "D"
       ? { segmento: "ESTUDIO_D", estado: "NO_APTO", accion: "Sin secuencia ni seguimiento comercial" }
-      : { segmento: `ESTUDIO_${perfil}`, estado: "ESTUDIO_GRATUITO", accion: "Continuar WhatsApp desde el último hito confirmado" },
+      : { segmento: `ESTUDIO_${perfil}`, estado: "NUEVO", accion: "Continuar WhatsApp desde el último hito confirmado" },
   };
 }
 

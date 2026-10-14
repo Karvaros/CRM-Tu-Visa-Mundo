@@ -43,7 +43,7 @@ export type StudyAnswers = Partial<Record<keyof typeof studyOptions, string>> & 
   telefono?: string;
 };
 export type StudyOutcome =
-  | { perfil: "A" | "B" | "C" | "D"; correo: string; motivo: string; crm: { segmento: "ESTUDIO_A" | "ESTUDIO_B" | "ESTUDIO_C" | "ESTUDIO_D"; estado: "ESTUDIO_GRATUITO" | "NO_APTO"; accion: string } }
+  | { perfil: "A" | "B" | "C" | "D"; correo: string; motivo: string; crm: { segmento: "ESTUDIO_A" | "ESTUDIO_B" | "ESTUDIO_C" | "ESTUDIO_D"; estado: "NUEVO" | "NO_APTO"; accion: string } }
   | { perfil: "PENDIENTE"; correo: null; motivo: string; crm: { segmento: null; estado: null; accion: string } };
 
 export const studyProfileLabels: Record<StudyOutcome["perfil"], string> = {

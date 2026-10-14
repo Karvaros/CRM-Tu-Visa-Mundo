@@ -2,7 +2,8 @@ import { studyOptions, type StudyAnswers } from "./study";
 import { classifyStudy } from "./study-scoring";
 import type { StudyClaim, StoredProfile, createStudyStore } from "./study-store";
 import type { createActiveCampaign } from "./activecampaign";
-import type { Message } from "./types";
+import type { LeadStatus, Message } from "./types";
+import { stateAfterStudy } from "./commercial-status";
 import { studySequenceForDestination } from "./message-sequences";
 import type { LeadRow } from "./study-store";
 
@@ -45,7 +46,7 @@ function leadFields(claim: StudyClaim) {
     SECUENCIA_PAUSADA: true,
     SECUENCIA_ID: "",
     PROXIMO_MENSAJE: [],
-    ESTADO: isLow ? "NO_APTO" : "ESTUDIO_GRATUITO",
+    ESTADO: isLow ? "NO_APTO" : "NUEVO",
     SEGUIMIENTO_MANUAL: !isLow,
     ...(isLow ? {} : { PROXIMO_CONTACTO: claim.createdAt }),
     PROXIMA_ACCION: isLow ? "Sin seguimiento comercial" : isPending
@@ -106,8 +107,10 @@ export function createStudySubmission(options: {
       return { perfil: null, status: "EXISTING" };
     }
     const baseFields: Record<string, unknown> = leadFields(claim);
+    if (claim.perfil !== "D") baseFields.ESTADO = stateAfterStudy(originalLead?.ESTADO as LeadStatus | undefined,
+      Boolean(originalLead?.ULTIMO_CONTACTO));
     const preserveManual = Boolean(originalLead && (["CLIENTE", "NO_APTO", "INACTIVO"].includes(String(originalLead.ESTADO))
-      || originalLead.SEGUIMIENTO_MANUAL === true || originalLead.ESTADO === "EN_CONVERSACION"));
+      || originalLead.SEGUIMIENTO_MANUAL === true || ["EN_CONVERSACION", "INTERESADO"].includes(String(originalLead.ESTADO))));
     if (!preserveManual && ["A", "B", "C"].includes(claim.perfil) && selectWhatsApp) {
       const next = await selectWhatsApp(claim.answers.destino!, claim.perfil, originalLead ?? undefined);
       if (next && !next.requiereRevision) {

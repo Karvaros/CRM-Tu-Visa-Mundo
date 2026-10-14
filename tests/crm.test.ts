@@ -32,12 +32,12 @@ test("notas se guardan y deshacen sin cambiar el seguimiento, incluso tras seria
   assert.equal(undone.leads[0].proximoMensajeId, original.proximoMensajeId);
 });
 
-test("el directorio encuentra estudios contactados aunque su próximo contacto sea futuro", () => {
-  const lead = { ...seed().leads[0], estado: "ESTUDIO_GRATUITO" as const, ultimoContacto: now.toISOString(), proximoContacto: "2026-09-24" };
-  assert.equal(matchesLeadFilter(lead, "WHATSAPP_ENVIADO", "2026-09-14"), true);
+test("Contactado encuentra estudios contactados aunque su próximo contacto sea futuro", () => {
+  const lead = { ...seed().leads[0], estado: "CONTACTADO" as const, tipoEstudio: "GRATUITO" as const, ultimoContacto: now.toISOString(), proximoContacto: "2026-09-24" };
+  assert.equal(matchesLeadFilter(lead, "CONTACTADO", "2026-09-14"), true);
   assert.equal(matchesLeadFilter(lead, "", "2026-09-14"), true);
   assert.equal(matchesAgendaFilter(lead, "", "2026-09-14"), false);
-  assert.equal(matchesLeadFilter({ ...lead, ultimoContacto: undefined }, "WHATSAPP_ENVIADO", "2026-09-14"), false);
+  assert.equal(matchesLeadFilter({ ...lead, estado: "NUEVO" }, "CONTACTADO", "2026-09-14"), false);
 });
 function sent(data = seed(), index = 0) {
   const lead = data.leads[index];
@@ -296,7 +296,7 @@ test("caso E: con varias acciones solo se deshace la más reciente", () => {
   assert.equal(isPendingDefinition(restored.leads[0]), true);
   assert.equal(latestUndoableInteraction(restored, lead.id)?.id, "reply-e");
 });
-test("reprogramar mantiene estado, pausa y último envío; rechaza fechas pasadas", () => {
+test("reprogramar pasa a Seguimiento, conserva pausa y último envío y rechaza fechas pasadas", () => {
   const data = seed();
   const lead = data.leads[3];
   const command = {
@@ -307,7 +307,7 @@ test("reprogramar mantiene estado, pausa y último envío; rechaza fechas pasada
     accion: "Confirmar documentos",
   };
   const result = applyCommand(data, command, now, "event-1");
-  assert.equal(result.leads[3].estado, lead.estado);
+  assert.equal(result.leads[3].estado, "SEGUIMIENTO");
   assert.equal(result.leads[3].ultimoContacto, lead.ultimoContacto);
   assert.equal(result.leads[3].secuenciaPausada, true);
   assert.equal(priority(result.leads[3], "2026-09-14"), null);
@@ -333,7 +333,7 @@ test("fin de secuencia no inventa otro mensaje ni cierra la venta", () => {
   const result = applyCommand(data, sent(data, 2), now, "event-1");
   assert.equal(result.leads[2].proximoMensajeId, undefined);
   assert.equal(result.leads[2].proximoContacto, undefined);
-  assert.equal(result.leads[2].estado, "SEGUIMIENTO");
+  assert.equal(result.leads[2].estado, "CONTACTADO");
 });
 test("venta y pérdida salen de HOY y conservan el historial", () => {
   for (const estado of ["CLIENTE", "NO_APTO", "INACTIVO"] as const) {

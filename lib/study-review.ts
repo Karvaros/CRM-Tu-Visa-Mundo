@@ -3,6 +3,7 @@ import { confirmedWhatsAppMessageIds, firstStudyMessage, studySequenceForDestina
 import type { createStudyStore } from "./study-store";
 import type { createActiveCampaign } from "./activecampaign";
 import type { CrmData } from "./types";
+import { hasConfirmedContact, stateAfterStudy } from "./commercial-status";
 
 /** Resolves only the approved, previously unclassified visa/no-travel combination. */
 export function createStudyReview(options: {
@@ -30,7 +31,7 @@ export function createStudyReview(options: {
       || answers.visaAnterior !== "Sí, de EEUU o Canadá o Australia") throw new Error("Este cruce requiere otra revisión.");
     const outcome = classifyStudy(answers);
     if (outcome.perfil !== "C") throw new Error("La revisión no corresponde a Perfil Medio.");
-    if (originalPending && (lead.estado !== "ESTUDIO_GRATUITO" || !lead.seguimientoManual
+    if (originalPending && (!["ESTUDIO_GRATUITO", "NUEVO", "CONTACTADO"].includes(lead.estado) || !lead.seguimientoManual
       || lead.proximaAccion !== "Revisar clasificación del Estudio de Perfil"))
       throw new Error("El asesor ya cambió el seguimiento; revisa la ficha.");
     if (retry && claim.status === "PROCESSING" && claim.revision &&
@@ -53,11 +54,12 @@ export function createStudyReview(options: {
       // Re-read before restoring the queue; do not overwrite an advisor's concurrent decision.
       const latest = await store.findLead(claim.email);
       if (!latest || Number(latest.VERSION || 0) !== version) throw new Error("El lead cambió durante la revisión. Recarga antes de continuar.");
-      const restoreQueue = originalPending || (latest.ESTADO === "ESTUDIO_GRATUITO"
+      const restoreQueue = originalPending || (["ESTUDIO_GRATUITO", "NUEVO", "CONTACTADO"].includes(String(latest.ESTADO))
         && latest.PROXIMA_ACCION === "Revisar clasificación del Estudio de Perfil");
       await store.updateLead(rawLead.id, {
         PERFIL_ESTUDIO: "C", SEGMENTO: "ESTUDIO_C", AC_CONTACT_ID: synced.id, AC_SYNC_STATUS: "SENT",
         VERSION: version + 1,
+        ESTADO: stateAfterStudy(lead.estado, hasConfirmedContact(data, lead)),
         ...(restoreQueue ? { SECUENCIA_ID: studySequenceForDestination(answers.destino!),
           PROXIMO_MENSAJE: [Number(next.id)], PROXIMO_CONTACTO: now().toISOString(),
           PROXIMA_ACCION: next.titulo, SECUENCIA_PAUSADA: false, SEGUIMIENTO_MANUAL: false } : {}),

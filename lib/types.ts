@@ -3,14 +3,14 @@ export const leadStatuses = [
   "CONTACTADO",
   "EN_CONVERSACION",
   "SEGUIMIENTO",
-  "ESTUDIO_GRATUITO",
-  "ESTUDIO_PERSONALIZADO",
   "INTERESADO",
   "CLIENTE",
   "NO_APTO",
   "INACTIVO",
 ] as const;
-export type LeadStatus = (typeof leadStatuses)[number];
+export type CommercialLeadStatus = (typeof leadStatuses)[number];
+/** Legacy study states remain readable in stored history, but are no longer selectable. */
+export type LeadStatus = CommercialLeadStatus | "ESTUDIO_GRATUITO" | "ESTUDIO_PERSONALIZADO";
 export type LeadPriority =
   | "PENDIENTE_DEFINIR"
   | "NUEVO"
@@ -146,7 +146,8 @@ export type LeadCommand = { leadId: string; version: number } & (
       type: "nextStep";
       step: "MANUAL" | "ESTUDIO" | "ASESORIA" | "INFORMACION";
     }
-  | { type: "status"; estado: LeadStatus }
+  | { type: "status"; estado: CommercialLeadStatus }
+  | { type: "reconcileStatus" }
   | { type: "note"; texto: string }
   | { type: "undo"; interactionId: string }
 );

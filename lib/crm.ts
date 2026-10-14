@@ -1,4 +1,5 @@
 import { addDays, today, validDate } from "./dates";
+import { hasConfirmedContact, isStudyStatus, matchesStudyFilter, stateAfterStudy, statusReconciliation } from "./commercial-status";
 import {
   leadStatuses,
   type CrmData,
@@ -44,7 +45,6 @@ export function matchesLeadFilter(
   now = new Date(),
 ): boolean {
   if (filter === "PENDIENTES_HOY") return priority(lead, date, now) !== null;
-  if (filter === "WHATSAPP_ENVIADO") return Boolean(lead.ultimoContacto);
   return !filter || lead.estado === filter;
 }
 
@@ -56,6 +56,7 @@ export function matchesAgendaFilter(
 ): boolean {
   const kind = priority(lead, date, now);
   if (!kind) return false;
+  if (filter.startsWith("ESTUDIO:")) return matchesStudyFilter(lead, filter.slice(8));
   if (filter.startsWith("ESTADO:")) return lead.estado === filter.slice(7);
   if (filter === "SEGUIMIENTOS")
     return ["ATRASADO", "HOY", "MANUAL"].includes(kind);
@@ -227,7 +228,7 @@ export function applyCommand(
       throw new Error("Completa la revisión del mensaje antes de enviarlo.");
     lead.ultimoContacto = now.toISOString();
     lead.ultimoMensajeId = message.id;
-    if (lead.estado === "NUEVO") lead.estado = "CONTACTADO";
+    if (lead.estado === "NUEVO" || isStudyStatus(lead.estado)) lead.estado = "CONTACTADO";
     const next =
       !lead.secuenciaPausada && !lead.seguimientoManual
         ? nextMessage(result, lead, message)
@@ -247,7 +248,7 @@ export function applyCommand(
     lead.seguimientoManual = false;
     tipo = "ENVIADO";
     detalle = `Envío confirmado: ${message.titulo}`;
-  } else if (command.type === "replied") {
+  } else if (command.type === "replied" || (command.type === "status" && command.estado === "EN_CONVERSACION")) {
     if (isClosed(lead))
       throw new Error("Reabre el lead antes de registrar una respuesta.");
     lead.estado = "EN_CONVERSACION";
@@ -267,8 +268,10 @@ export function applyCommand(
       throw new Error("Selecciona hoy o una fecha futura.");
     if (!command.accion.trim()) throw new Error("Escribe la próxima acción.");
     lead.proximoContacto = command.fecha;
+    lead.proximoContactoExacto = undefined;
     lead.proximaAccion = command.accion.trim();
     lead.seguimientoManual = true;
+    if (lead.estado !== "INTERESADO") lead.estado = "SEGUIMIENTO";
     tipo = "REPROGRAMADO";
     detalle = `${command.fecha}: ${lead.proximaAccion}`;
     undoLabel = "Seguimiento reprogramado";
@@ -289,6 +292,13 @@ export function applyCommand(
     tipo = "SIGUIENTE_PASO";
     detalle = `Siguiente paso definido: ${lead.proximaAccion}`;
     undoLabel = detalle;
+  } else if (command.type === "reconcileStatus") {
+    const corrected = statusReconciliation(result, lead);
+    if (!corrected) throw new Error("El estado comercial ya corresponde al historial.");
+    detalle = `Corrección del estado según historial: ${lead.estado} → ${corrected}`;
+    lead.estado = corrected;
+    tipo = "ESTADO";
+    undoLabel = "Corrección del estado comercial";
   } else if (command.type === "note") {
     if (typeof command.texto !== "string" || command.texto.length > 5000)
       throw new Error("La nota admite hasta 5000 caracteres.");
@@ -299,6 +309,7 @@ export function applyCommand(
   } else {
     if (!leadStatuses.includes(command.estado))
       throw new Error("Estado inválido.");
+    if (command.estado === "SEGUIMIENTO") throw new Error("Usa Reprogramar para indicar la fecha y acción del seguimiento.");
     const wasPending = isPendingDefinition(lead);
     detalle = `${lead.estado} → ${command.estado}`;
     tipo = "ESTADO";
@@ -310,8 +321,9 @@ export function applyCommand(
       lead.seguimientoManual = false;
       lead.proximaAccion =
         command.estado === "CLIENTE" ? "Venta realizada" : "Lead cerrado";
-    } else if (wasPending) {
-      lead.proximoContacto = date;
+    } else if (wasPending || command.estado === "INTERESADO") {
+      lead.proximoContacto = command.estado === "INTERESADO" && lead.proximoContacto && lead.proximoContacto > date
+        ? lead.proximoContacto : date;
       lead.proximoContactoExacto = undefined;
       lead.proximoMensajeId = undefined;
       lead.secuenciaPausada = true;
@@ -372,6 +384,7 @@ export function applyStudyClassification(
       lead.seguimientoManual = false;
       lead.proximaAccion = "Perfil D: sin seguimiento comercial";
     } else {
+      lead.estado = stateAfterStudy(lead.estado, hasConfirmedContact(result, lead));
       // La continuidad por hitos se activará cuando exista el adaptador real.
       lead.proximoContacto = today(now);
       lead.seguimientoManual = true;

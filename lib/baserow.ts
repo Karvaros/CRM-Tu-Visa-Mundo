@@ -89,7 +89,8 @@ export function mapLead(row: Row): Lead {
     ultimoMensajeId: linkedId(row, "ULTIMO_MENSAJE"),
     proximoContacto: (optional(row, "PROXIMO_CONTACTO")
       ? today(new Date(value(row, "PROXIMO_CONTACTO"))) : undefined) ??
-      (boolean(row, "SEGUIMIENTO_MANUAL") && value(row, "ESTADO") === "ESTUDIO_GRATUITO"
+      (boolean(row, "SEGUIMIENTO_MANUAL") && (value(row, "ESTADO") === "ESTUDIO_GRATUITO" ||
+        (value(row, "TIPO_ESTUDIO") === "GRATUITO" && ["NUEVO", "CONTACTADO"].includes(value(row, "ESTADO"))))
         ? dateOnly(optional(row, "FECHA_PRIMER_ESTUDIO")) : undefined),
     proximoContactoExacto: value(row, "ESTADO") === "NUEVO" && value(row, "ORIGEN").startsWith("FORM_AC_")
       ? optional(row, "PROXIMO_CONTACTO") : undefined,

@@ -8,7 +8,7 @@ import {
   priority,
   renderMessage,
 } from "@/lib/crm";
-import { leadStatuses, type Lead, type LeadStatus } from "@/lib/types";
+import { leadStatuses, type Lead, type CommercialLeadStatus } from "@/lib/types";
 import { useCrm } from "./crm-provider";
 import { Modal } from "./modal";
 import { whatsappUrl } from "@/lib/whatsapp";
@@ -32,10 +32,7 @@ export function LeadCard({ lead }: { lead: Lead }) {
   const canSend = Boolean(
     text && priority(lead, date, new Date(clock || Date.now())) && !message?.requiereRevision,
   );
-  const label =
-    leadStatuses.indexOf(lead.estado) >= 0
-      ? lead.estado.replaceAll("_", " ").replace("CONVERSACION", "CONVERSACIÓN")
-      : lead.estado;
+  const label = lead.estado.replaceAll("_", " ").replace("CONVERSACION", "CONVERSACIÓN");
   async function copy() {
     try {
       await navigator.clipboard.writeText(text);
@@ -353,8 +350,8 @@ export function LeadCard({ lead }: { lead: Lead }) {
               />
             </label>
             <p className="muted">
-              Se guardará como seguimiento manual. No cambia el último envío ni
-              reactiva una secuencia pausada.
+              Pasará a Seguimiento con esta fecha y acción. Si ya está marcado
+              como Interesado, conservará ese estado. No cambia el último envío.
             </p>
             <button className="button button--primary" disabled={busy}>
               Guardar reprogramación
@@ -401,16 +398,17 @@ export function LeadCard({ lead }: { lead: Lead }) {
             onSubmit={async (event) => {
               event.preventDefault();
               const form = new FormData(event.currentTarget);
+              if (form.get("estado") === "SEGUIMIENTO") { setPanel("reschedule"); return; }
               await execute({
                 type: "status",
                 leadId: lead.id,
                 version: lead.version,
-                estado: String(form.get("estado")) as LeadStatus,
+                estado: String(form.get("estado")) as CommercialLeadStatus,
               });
             }}
           >
             <label>
-              Estado
+              Estado comercial
               <select
                 key={lead.estado}
                 name="estado"

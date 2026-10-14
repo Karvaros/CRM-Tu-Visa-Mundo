@@ -46,7 +46,7 @@ export function firstStudyMessage(messages: Message[], destination: string, prof
 export function initialStudyContactRepairs(data: CrmData) {
   return data.leads.flatMap((lead) => {
     if (lead.tipoEstudio !== "GRATUITO" || !lead.perfilEstudio ||
-      !["A", "B", "C"].includes(lead.perfilEstudio) || lead.estado !== "ESTUDIO_GRATUITO" ||
+      !["A", "B", "C"].includes(lead.perfilEstudio) || !["ESTUDIO_GRATUITO", "NUEVO"].includes(lead.estado) ||
       confirmedWhatsAppMessageIds(data, lead).length) return [];
     const oldPlaceholder = lead.seguimientoManual && lead.secuenciaPausada && !lead.proximoMensajeId &&
       lead.proximaAccion === "Revisar estudio y continuar desde el último WhatsApp enviado";

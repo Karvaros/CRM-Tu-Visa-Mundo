@@ -67,7 +67,8 @@ export function createBaserowCrmWriter(options: {
         }
       }
       await write(tables.leads, "PATCH", rowId(lead.id), {
-        ...leadPatch(lead), ...(optOut ? { AC_SYNC_STATUS: "OPTED_OUT" } : {}),
+        ...(command.type === "reconcileStatus" ? { VERSION: lead.version, ESTADO: lead.estado } : leadPatch(lead)),
+        ...(optOut ? { AC_SYNC_STATUS: "OPTED_OUT" } : {}),
       });
       try {
         for (const interaction of interactions) {

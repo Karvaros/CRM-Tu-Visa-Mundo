@@ -7,6 +7,8 @@ import { useCrm } from "./crm-provider";
 import { LeadCard } from "./lead-card";
 import { Modal } from "./modal";
 import { leadStatusHelp } from "@/lib/lead-status-help";
+import { matchesStudyFilter } from "@/lib/commercial-status";
+import { StatusReconciliation } from "./status-reconciliation";
 
 const sections: { key: LeadPriority; title: string; description: string }[] = [
   {
@@ -61,6 +63,7 @@ export function CrmView({ view }: { view: string }) {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("");
   const [destination, setDestination] = useState("");
+  const [studyFilter, setStudyFilter] = useState("");
   const [agendaFilter, setAgendaFilter] = useState("");
   const [messageSequence, setMessageSequence] = useState("");
   const [reviewOnly, setReviewOnly] = useState(false);
@@ -73,7 +76,7 @@ export function CrmView({ view }: { view: string }) {
     const params = new URLSearchParams(window.location.search);
     setSearch(params.get("buscar") ?? "");
     const state = params.get("estado") ?? "";
-    setFilter([...leadStatuses, "PENDIENTES_HOY", "WHATSAPP_ENVIADO", ""].includes(state) ? state : "");
+    setFilter([...leadStatuses, "PENDIENTES_HOY", ""].includes(state) ? state : "");
   }, [view]);
   if (!data) return <p role="status">Cargando CRM…</p>;
   const destinations = [
@@ -88,6 +91,7 @@ export function CrmView({ view }: { view: string }) {
         .toLocaleLowerCase("es")
         .includes(search.toLocaleLowerCase("es")) &&
       (!destination || destinationName(lead.destino) === destination) &&
+      matchesStudyFilter(lead, studyFilter) &&
       (view !== "leads" || matchesLeadFilter(lead, filter, date, new Date(clock || Date.now()))),
   );
   const due = leads.filter((lead) =>
@@ -166,6 +170,15 @@ export function CrmView({ view }: { view: string }) {
               {destinations.map((name) => <option key={name} value={name}>{name}</option>)}
             </select>
           </label>
+          <label>
+            Estudio de perfil
+            <select value={studyFilter} onChange={(event) => setStudyFilter(event.target.value)}>
+              <option value="">Con y sin estudio</option>
+              <option value="NINGUNO">Sin estudio</option>
+              <option value="GRATUITO">Estudio gratuito</option>
+              <option value="PAGO">Estudio personalizado</option>
+            </select>
+          </label>
           {view === "hoy" ? (
             <label>
               Tipo de pendiente
@@ -189,11 +202,10 @@ export function CrmView({ view }: { view: string }) {
             </label>
           ) : (
             <label>
-              Estado
+              Estado comercial
               <select value={filter} onChange={(event) => setFilter(event.target.value)}>
                 <option value="">Todos los estados</option>
                 <option value="PENDIENTES_HOY">Pendientes hoy</option>
-                <option value="WHATSAPP_ENVIADO">Con WhatsApp enviado (cualquier estado)</option>
                 {leadStatuses.map((status) => (
                   <option key={status} value={status}>
                     {status.replaceAll("_", " ").replace("CONVERSACION", "CONVERSACIÓN")}
@@ -209,10 +221,9 @@ export function CrmView({ view }: { view: string }) {
           HOY muestra acciones de hoy, vencidas y pendientes de definir. Al confirmar un envío, el lead puede quedar programado para otro día. {" "}
           <a href={agendaFilter.startsWith("ESTADO:") ? `/leads?estado=${encodeURIComponent(agendaFilter.slice(7))}` : "/leads"}>Ver todos {agendaFilter.startsWith("ESTADO:") ? "los leads de este estado" : "los contactos"} en LEADS</a>.
         </p>}
-        {view === "leads" && filter === "WHATSAPP_ENVIADO" && <p className="demo-note">Incluye todos los leads con un WhatsApp confirmado, aunque sigan como Estudio gratuito, estén en conversación o tengan seguimiento futuro. La ficha conserva las fechas y el texto de cada envío.</p>}
         <details className="state-help">
           <summary>¿Qué significa cada estado?</summary>
-          <p>El estado describe la situación del lead. La fecha del último WhatsApp y la próxima acción se consultan por separado.</p>
+          <p>Cada lead tiene un único estado comercial. Al confirmar el primer WhatsApp pasa a Contactado; al marcar Respondió pasa a En conversación. El estudio y el perfil se conservan aparte y no reemplazan ese estado.</p>
           <dl>{leadStatuses.map((status) => <div key={status}>
             <dt>{status.replaceAll("_", " ").replace("CONVERSACION", "CONVERSACIÓN")}</dt><dd>{leadStatusHelp[status]}</dd>
           </div>)}</dl>
@@ -395,6 +406,7 @@ export function CrmView({ view }: { view: string }) {
       {view === "configuracion" && (
         <section className="lead-card">
           <h2>{realData ? "CRM conectado" : "Entorno de demostración"}</h2>
+          {realData && <StatusReconciliation />}
           <dl>
             <dt>Asesor</dt>
             <dd>Asesor principal · campo preparado por lead</dd>
