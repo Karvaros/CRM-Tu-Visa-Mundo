@@ -35,5 +35,7 @@ export function classifyStudy(answers: StudyAnswers): StudyOutcome {
     return outcome("B", "PERFIL_MEDIO_ALTO", "Primera solicitud con viajes a destinos principales.");
   if (!strongTravel && answers.visaAnterior === "No he tenido visa")
     return outcome("C", "PERFIL_MEDIO", "Primera solicitud sin visa previa ni viajes a destinos principales.");
+  if (answers.viajes === "No: No ha salido del país" && answers.visaAnterior === "Sí, de EEUU o Canadá o Australia")
+    return outcome("C", "PERFIL_MEDIO", "Primera solicitud con visa previa declarada, sin viajes fuera del país. Se clasifica como Perfil Medio; se conserva la respuesta original de la visa.");
   return pending("Las automatizaciones actuales no definen este cruce de respuestas; requiere revisión.");
 }

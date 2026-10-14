@@ -122,3 +122,9 @@ dd { margin: 4px 0 0; overflow-wrap: anywhere; }
   .date-chip { align-self: flex-start; }
 }
 
+/* Lead reference panels stay compact until the advisor opens them. */
+.study-answers, .state-help { padding: 16px; margin: 16px 0; border: 1px solid var(--border, #d6e4f2); border-radius: 12px; background: #f5f9fd; overflow-wrap: anywhere; }
+.study-answers summary, .state-help summary { cursor: pointer; font-weight: 700; color: #153b61; }
+.study-answers summary:focus-visible, .state-help summary:focus-visible { outline: 3px solid #418adb; outline-offset: 5px; }
+.study-answers dd, .state-help dd { margin-bottom: 16px; }
+.lead-notes { white-space: pre-wrap; overflow-wrap: anywhere; }

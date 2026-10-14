@@ -14,6 +14,7 @@ function rowId(value: string): number {
 function leadPatch(lead: Lead): Record<string, unknown> {
   return {
     VERSION: lead.version,
+    NOTAS: lead.notas ?? "",
     ESTADO: lead.estado,
     ULTIMO_CONTACTO: lead.ultimoContacto ?? null,
     ULTIMO_MENSAJE: lead.ultimoMensajeId ? [rowId(lead.ultimoMensajeId)] : [],

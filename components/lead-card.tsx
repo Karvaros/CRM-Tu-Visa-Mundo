@@ -12,10 +12,12 @@ import { leadStatuses, type Lead, type LeadStatus } from "@/lib/types";
 import { useCrm } from "./crm-provider";
 import { Modal } from "./modal";
 import { whatsappUrl } from "@/lib/whatsapp";
+import { studyProfileLabels } from "@/lib/study";
+import { StudyAnswers } from "./study-answers";
 
 export function LeadCard({ lead }: { lead: Lead }) {
-  const { data, date, clock, busy, execute, notify } = useCrm();
-  const [panel, setPanel] = useState<"sent" | "reschedule" | "detail" | null>(
+  const { data, date, clock, busy, execute, notify, resolveStudy, realData } = useCrm();
+  const [panel, setPanel] = useState<"sent" | "reschedule" | "detail" | "review" | null>(
     null,
   );
   const message = data?.mensajes.find(
@@ -23,6 +25,7 @@ export function LeadCard({ lead }: { lead: Lead }) {
   );
   const text = renderMessage(message, lead);
   const pendingDefinition = isPendingDefinition(lead);
+  const study = data?.interacciones.find((item) => item.leadId === lead.id && item.estudio?.id === lead.primerEstudioId)?.estudio;
   const undoable = data
     ? latestUndoableInteraction(data, lead.id)
     : undefined;
@@ -62,7 +65,7 @@ export function LeadCard({ lead }: { lead: Lead }) {
           <p className="muted">
             {lead.tipoEstudio === "NINGUNO"
               ? "Sin estudio de perfil"
-              : `Estudio ${lead.tipoEstudio.toLowerCase()} · Perfil ${lead.perfilEstudio ?? "sin clasificar"}`}
+              : `Estudio ${lead.tipoEstudio.toLowerCase()} · ${lead.perfilEstudio ? studyProfileLabels[lead.perfilEstudio] : "Perfil sin clasificar"}`}
           </p>
         </div>
         <span className={`status status--${lead.estado.toLowerCase()}`}>
@@ -72,6 +75,11 @@ export function LeadCard({ lead }: { lead: Lead }) {
       {lead.secuenciaPausada && (
         <p className="pause-note">Secuencia pausada · atención manual</p>
       )}
+      {study && <StudyAnswers study={study} />}
+      {realData && study?.sugerencia && !isClosed(lead) && <p className="review-note">
+        Revisión de clasificación disponible para el administrador. {" "}
+        <button className="button button--secondary" disabled={busy} onClick={() => setPanel("review")}>Revisar como Perfil Medio</button>
+      </p>}
       <div className="lead-meta">
         <div>
           <span>Último mensaje enviado</span>
@@ -293,6 +301,13 @@ export function LeadCard({ lead }: { lead: Lead }) {
           </button>
         </Modal>
       )}
+      {panel === "review" && study && <Modal title={`Revisar estudio de ${lead.nombre}`} close={() => setPanel(null)}>
+        <p>Se guardará Perfil Medio, conservando las respuestas y la fecha del primer estudio. Se activará su correo de resultado en ActiveCampaign y se recuperará el siguiente WhatsApp correspondiente, sin marcarlo como enviado.</p>
+        <p>La respuesta de visa previa se mantiene tal como la dio la persona.</p>
+        <button className="button button--primary" disabled={busy} onClick={async () => {
+          if (await resolveStudy(lead.id, lead.version)) setPanel(null);
+        }}>Aplicar Perfil Medio y enviar resultado</button>
+      </Modal>}
       {panel === "reschedule" && (
         <Modal
           title={`Reprogramar a ${lead.nombre}`}
@@ -364,14 +379,24 @@ export function LeadCard({ lead }: { lead: Lead }) {
             <dt>Tipo de estudio</dt>
             <dd>{lead.tipoEstudio}</dd>
             <dt>Perfil de estudio</dt>
-            <dd>{lead.perfilEstudio ?? "No aplica"}</dd>
+            <dd>{lead.perfilEstudio ? studyProfileLabels[lead.perfilEstudio] : "Sin clasificar"}</dd>
             <dt>Notas</dt>
-            <dd>{lead.notas ?? "Sin notas"}</dd>
+            <dd className="lead-notes">{lead.notas ?? "Sin notas"}</dd>
             <dt>Último mensaje</dt>
             <dd>{lead.ultimoMensajeId ?? "Ninguno"}</dd>
             <dt>Próxima acción</dt>
             <dd>{lead.proximaAccion}</dd>
           </dl>
+          <form onSubmit={async (event) => {
+            event.preventDefault();
+            const form = new FormData(event.currentTarget);
+            await execute({ type: "note", leadId: lead.id, version: lead.version, texto: String(form.get("notas") ?? "") });
+          }}>
+            <label>Notas del asesor
+              <textarea key={`${lead.id}:${lead.notas ?? ""}`} name="notas" maxLength={5000} rows={4} defaultValue={lead.notas ?? ""} />
+            </label>
+            <button className="button button--secondary" disabled={busy}>Guardar notas</button>
+          </form>
           <form
             onSubmit={async (event) => {
               event.preventDefault();

@@ -15,6 +15,7 @@ export type StudyClaim = {
   legacy: boolean;
   acContactId?: string;
   rowId?: number;
+  revision?: { motivo: string; asesor: string; fecha: string };
 };
 export type LeadRow = Record<string, unknown> & { id: number };
 
@@ -80,11 +81,27 @@ export function createStudyStore(options: { token: string; ids: StudyTableIds; f
       if (!claim.rowId) throw new Error("Falta el ID de la interacción.");
       await request<LeadRow>(ids.interacciones, "PATCH", `${claim.rowId}/?user_field_names=true`, {
         RESPUESTAS_ESTUDIO: JSON.stringify({ ...claim, rowId: undefined }),
+        ...(claim.revision ? { DETALLE: `Primer Estudio de Perfil: ${claim.perfil}. Corrección de PENDIENTE por ${claim.revision.asesor} (${claim.revision.fecha}): ${claim.revision.motivo}` } : {}),
       });
     },
     async linkClaim(claim: StudyClaim, leadId: number): Promise<void> {
       if (!claim.rowId) throw new Error("Falta el ID de la interacción.");
       await request<LeadRow>(ids.interacciones, "PATCH", `${claim.rowId}/?user_field_names=true`, { LEAD: [leadId] });
+    },
+    async recordRevision(claim: StudyClaim, leadId: number): Promise<void> {
+      if (!claim.revision) throw new Error("Falta la revisión del estudio.");
+      try {
+        await request<LeadRow>(ids.interacciones, "POST", "?user_field_names=true", {
+          TIPO: "ESTUDIO_CLASIFICADO", LEAD: [leadId], FECHA: claim.revision.fecha,
+          DETALLE: `Clasificación pendiente resuelta: Perfil Medio. ${claim.revision.motivo} Respuestas originales conservadas.`,
+          ASESOR: claim.revision.asesor, ORIGEN_SISTEMA: "CRM_V2",
+          ID_EVENTO_EXTERNO: `ESTUDIO_REVISADO:${claim.id}`,
+        });
+      } catch (error) {
+        if (!(error instanceof Error) || !error.message.includes("HTTP 400")) throw error;
+        const existing = await findOne(ids.interacciones, ids.eventField, `ESTUDIO_REVISADO:${claim.id}`);
+        if (!existing) throw error;
+      }
     },
     async findLead(email: string): Promise<LeadRow | null> {
       return findOne(ids.leads, ids.emailField, email);

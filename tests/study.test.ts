@@ -14,6 +14,13 @@ const base: StudyAnswers = {
   cumplimiento: studyOptions.cumplimiento[2],
   lazos: studyOptions.lazos[1],
 };
+test("visa previa y ningún viaje se clasifica Medio sin superar condiciones de perfil Bajo", () => {
+  const answers = { ...base, viajes: "No: No ha salido del país" };
+  assert.equal(classifyStudy(answers).perfil, "C");
+  assert.equal(classifyStudy(answers).correo, "PERFIL_MEDIO");
+  assert.equal(classifyStudy({ ...answers, ocupacion: "Desempleado / Informal" }).perfil, "D");
+  assert.equal(classifyStudy({ ...answers, cumplimiento: studyOptions.cumplimiento[0] }).perfil, "D");
+});
 
 test("reconstruye las rutas observadas de primera vez y renovación", () => {
   assert.equal(classifyStudy(base).perfil, "A");

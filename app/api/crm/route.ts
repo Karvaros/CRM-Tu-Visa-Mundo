@@ -21,6 +21,7 @@ function validCommand(value: unknown): value is LeadCommand {
   if (!/^\d+$/.test(String(command.leadId)) || !Number.isSafeInteger(command.version)) return false;
   if (command.type === "sent") return /^\d+$/.test(String(command.mensajeId)) && typeof command.mensajeTexto === "string";
   if (command.type === "replied") return true;
+  if (command.type === "note") return typeof command.texto === "string" && command.texto.length <= 5000;
   if (command.type === "reschedule") return typeof command.fecha === "string" && typeof command.accion === "string" && command.accion.length <= 500;
   if (command.type === "nextStep") return ["MANUAL", "ESTUDIO", "ASESORIA", "INFORMACION"].includes(String(command.step));
   if (command.type === "status") return leadStatuses.includes(command.estado as (typeof leadStatuses)[number]);

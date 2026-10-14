@@ -1,11 +1,12 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { dateLabel, TIME_ZONE } from "@/lib/dates";
 import { matchesAgendaFilter, matchesLeadFilter, priority } from "@/lib/crm";
 import { leadStatuses, type Lead, type LeadPriority, type Message } from "@/lib/types";
 import { useCrm } from "./crm-provider";
 import { LeadCard } from "./lead-card";
 import { Modal } from "./modal";
+import { leadStatusHelp } from "@/lib/lead-status-help";
 
 const sections: { key: LeadPriority; title: string; description: string }[] = [
   {
@@ -58,7 +59,7 @@ export function CrmView({ view }: { view: string }) {
   const dueKind = (lead: Lead) =>
     priority(lead, date, new Date(clock || Date.now()));
   const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState("PENDIENTES_HOY");
+  const [filter, setFilter] = useState("");
   const [destination, setDestination] = useState("");
   const [agendaFilter, setAgendaFilter] = useState("");
   const [messageSequence, setMessageSequence] = useState("");
@@ -67,6 +68,13 @@ export function CrmView({ view }: { view: string }) {
   const [recoverContact, setRecoverContact] = useState("");
   const [recoverForm, setRecoverForm] = useState("1");
   const [recoveryNotice, setRecoveryNotice] = useState("");
+  useEffect(() => {
+    if (view !== "leads") return;
+    const params = new URLSearchParams(window.location.search);
+    setSearch(params.get("buscar") ?? "");
+    const state = params.get("estado") ?? "";
+    setFilter([...leadStatuses, "PENDIENTES_HOY", "WHATSAPP_ENVIADO", ""].includes(state) ? state : "");
+  }, [view]);
   if (!data) return <p role="status">Cargando CRM…</p>;
   const destinations = [
     ...mainDestinations,
@@ -101,6 +109,7 @@ export function CrmView({ view }: { view: string }) {
           <p>
             {view === "hoy"
               ? "A quién contactar, qué decir y cuál es el próximo paso."
+              : view === "leads" ? "Todos tus contactos, también los ya contactados y los programados para otra fecha."
               : "Tu Visa Mundo · espacio de trabajo del asesor"}
           </p>
         </div>
@@ -184,6 +193,7 @@ export function CrmView({ view }: { view: string }) {
               <select value={filter} onChange={(event) => setFilter(event.target.value)}>
                 <option value="">Todos los estados</option>
                 <option value="PENDIENTES_HOY">Pendientes hoy</option>
+                <option value="WHATSAPP_ENVIADO">Con WhatsApp enviado (cualquier estado)</option>
                 {leadStatuses.map((status) => (
                   <option key={status} value={status}>
                     {status.replaceAll("_", " ").replace("CONVERSACION", "CONVERSACIÓN")}
@@ -194,6 +204,20 @@ export function CrmView({ view }: { view: string }) {
           )}
         </div>
       )}
+      {["hoy", "leads"].includes(view) && <>
+        {view === "hoy" && <p className="demo-note">
+          HOY muestra acciones de hoy, vencidas y pendientes de definir. Al confirmar un envío, el lead puede quedar programado para otro día. {" "}
+          <a href={agendaFilter.startsWith("ESTADO:") ? `/leads?estado=${encodeURIComponent(agendaFilter.slice(7))}` : "/leads"}>Ver todos {agendaFilter.startsWith("ESTADO:") ? "los leads de este estado" : "los contactos"} en LEADS</a>.
+        </p>}
+        {view === "leads" && filter === "WHATSAPP_ENVIADO" && <p className="demo-note">Incluye todos los leads con un WhatsApp confirmado, aunque sigan como Estudio gratuito, estén en conversación o tengan seguimiento futuro. La ficha conserva las fechas y el texto de cada envío.</p>}
+        <details className="state-help">
+          <summary>¿Qué significa cada estado?</summary>
+          <p>El estado describe la situación del lead. La fecha del último WhatsApp y la próxima acción se consultan por separado.</p>
+          <dl>{leadStatuses.map((status) => <div key={status}>
+            <dt>{status.replaceAll("_", " ").replace("CONVERSACION", "CONVERSACIÓN")}</dt><dd>{leadStatusHelp[status]}</dd>
+          </div>)}</dl>
+        </details>
+      </>}
       {view === "hoy" && (
         <>
           {due.length === 0 && (

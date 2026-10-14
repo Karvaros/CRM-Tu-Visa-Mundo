@@ -92,6 +92,7 @@ export type LeadOperationalSnapshot = Pick<
   | "perfilEstudio"
   | "primerEstudioId"
   | "fechaPrimerEstudio"
+  | "notas"
 >;
 export interface Interaction {
   id: string;
@@ -115,6 +116,16 @@ export interface Interaction {
   undoSnapshot?: LeadOperationalSnapshot;
   undoLabel?: string;
   undoneInteractionId?: string;
+  estudio?: {
+    id: string;
+    answers: import("./study").StudyAnswers;
+    perfil: "A" | "B" | "C" | "D" | "PENDIENTE";
+    createdAt: string;
+    motivo: string;
+    sugerencia?: "C";
+    estadoSincronizacion: string;
+    revision?: { motivo: string; asesor: string; fecha: string };
+  };
 }
 export interface StudyClassification {
   leadId: string;
@@ -136,5 +147,6 @@ export type LeadCommand = { leadId: string; version: number } & (
       step: "MANUAL" | "ESTUDIO" | "ASESORIA" | "INFORMACION";
     }
   | { type: "status"; estado: LeadStatus }
+  | { type: "note"; texto: string }
   | { type: "undo"; interactionId: string }
 );

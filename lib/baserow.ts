@@ -7,6 +7,8 @@ import type {
   MessageSegment,
 } from "./types";
 import { today } from "./dates";
+import { studyOptions, type StudyAnswers } from "./study";
+import { classifyStudy } from "./study-scoring";
 
 export type BaserowTables = { leads: number; interacciones: number; mensajes: number };
 const defaultBaseUrl = "https://api.baserow.io";
@@ -116,6 +118,31 @@ export function mapMessage(row: Row): Message {
 export function mapInteraction(row: Row): Interaction {
   const undo = undoPayload(optional(row, "RESPUESTAS_ESTUDIO"));
   const externalId = optional(row, "ID_EVENTO_EXTERNO");
+  let estudio: Interaction["estudio"];
+  if (externalId?.startsWith("ESTUDIO_V2_PRIMERO:")) {
+    try {
+      const raw = JSON.parse(value(row, "RESPUESTAS_ESTUDIO"));
+      if (typeof raw.id === "string" && typeof raw.createdAt === "string" && raw.answers &&
+        ["A", "B", "C", "D", "PENDIENTE"].includes(raw.perfil)) {
+        const answers: StudyAnswers = {};
+        for (const key of [...Object.keys(studyOptions), "nombre", "email", "telefono"] as (keyof StudyAnswers)[]) {
+          if (typeof raw.answers[key] === "string") answers[key] = raw.answers[key];
+        }
+        const outcome = classifyStudy(answers);
+        const revision = raw.revision && typeof raw.revision.motivo === "string" &&
+          typeof raw.revision.asesor === "string" && typeof raw.revision.fecha === "string"
+          ? { motivo: raw.revision.motivo, asesor: raw.revision.asesor, fecha: raw.revision.fecha } : undefined;
+        estudio = { id: raw.id, answers, perfil: raw.perfil, createdAt: raw.createdAt,
+          motivo: revision?.motivo ?? (raw.perfil === "PENDIENTE"
+            ? "La regla anterior no contemplaba esta combinación de respuestas; se dejó para revisión manual." : outcome.motivo),
+          estadoSincronizacion: String(raw.status ?? ""), revision,
+          ...((raw.perfil === "PENDIENTE" && outcome.perfil === "C" && answers.visaAnterior === studyOptions.visaAnterior[0]
+            && answers.viajes === studyOptions.viajes[2]) || (revision && raw.perfil === "C" && raw.status === "ERROR")
+            ? { sugerencia: "C" as const } : {}),
+        };
+      }
+    } catch { /* A malformed legacy record remains visible in history, without invented answers. */ }
+  }
   return {
     id: String(row.id), leadId: linkedId(row, "LEAD") ?? "",
     tipo: value(row, "TIPO") as Interaction["tipo"], fecha: value(row, "FECHA"),
@@ -124,6 +151,7 @@ export function mapInteraction(row: Row): Interaction {
     eventoExternoId: externalId,
     undoSnapshot: undo?.snapshot,
     undoLabel: undo?.label,
+    estudio,
     undoneInteractionId: externalId?.startsWith("UNDO:")
       ? externalId.slice("UNDO:".length)
       : undefined,

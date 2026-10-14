@@ -18,6 +18,7 @@ import { usePathname } from "next/navigation";
 
 type Notice = {
   message: string;
+  leadHref?: string;
   undo?: { leadId: string; interactionId: string };
 };
 
@@ -29,6 +30,7 @@ interface CrmContextValue {
   realData: boolean;
   execute: (command: LeadCommand) => Promise<boolean>;
   saveMessage: (message: Message) => Promise<boolean>;
+  resolveStudy: (leadId: string, version: number) => Promise<boolean>;
   reset: () => Promise<boolean>;
   notify: (message: string) => void;
 }
@@ -87,6 +89,7 @@ export function CrmProvider({ children, realData }: { children: ReactNode; realD
   }
   async function execute(command: LeadCommand) {
     const leadName = data?.leads.find((lead) => lead.id === command.leadId)?.nombre ?? "Lead";
+    const leadHref = `/leads?buscar=${encodeURIComponent(leadName)}`;
     const undoneClosure = command.type === "undo"
       ? data?.interacciones.find((item) => item.id === command.interactionId)?.detalle
       : undefined;
@@ -96,20 +99,20 @@ export function CrmProvider({ children, realData }: { children: ReactNode; realD
           realData && /→ (NO_APTO|INACTIVO)$/.test(undoneClosure ?? "")
             ? " Los correos comerciales permanecen detenidos."
             : "";
-        return { message: `${leadName}: última acción deshecha y seguimiento restaurado.${emailNotice}` };
+        return { message: `${leadName}: última acción deshecha y seguimiento restaurado.${emailNotice}`, leadHref };
       }
       const undoable = latestUndoableInteraction(result, command.leadId);
       const undo = undoable
         ? { leadId: command.leadId, interactionId: undoable.id }
         : undefined;
       if (command.type === "replied") {
-        return { message: `${leadName} fue marcado como Respondió`, undo };
+        return { message: `${leadName} fue marcado como Respondió`, undo, leadHref };
       }
       if (command.type === "reschedule") {
-        return { message: `${leadName}: seguimiento reprogramado`, undo };
+        return { message: `${leadName}: seguimiento reprogramado`, undo, leadHref };
       }
       if (command.type === "nextStep") {
-        return { message: `${leadName}: siguiente paso guardado`, undo };
+        return { message: `${leadName}: siguiente paso guardado`, undo, leadHref };
       }
       if (command.type === "status") {
         const status = command.estado.replaceAll("_", " ").toLowerCase();
@@ -117,10 +120,12 @@ export function CrmProvider({ children, realData }: { children: ReactNode; realD
           realData && ["NO_APTO", "INACTIVO"].includes(command.estado)
             ? " y correos comerciales detenidos"
             : "";
-        return { message: `${leadName} fue marcado como ${status}${emailNotice}`, undo };
+        return { message: `${leadName} fue marcado como ${status}${emailNotice}`, undo, leadHref };
       }
       return {
-        message: realData
+        undo: command.type === "note" ? undo : undefined,
+        leadHref,
+        message: command.type === "note" ? `${leadName}: notas guardadas` : realData
           ? "Acción guardada en Baserow."
           : "Acción guardada en la demostración.",
       };
@@ -136,6 +141,13 @@ export function CrmProvider({ children, realData }: { children: ReactNode; realD
         realData,
         notify: (message) => setNotice({ message }),
         execute,
+        resolveStudy: (leadId, version) => run(async () => {
+          const response = await fetch("/api/crm/studies/resolve", { method: "POST",
+            headers: { "Content-Type": "application/json" }, body: JSON.stringify({ leadId, version }) });
+          const result = await response.json();
+          if (!response.ok) throw new Error(result.error ?? "Solo un administrador puede revisar el estudio.");
+          return result.data;
+        }, "Perfil Medio guardado; ActiveCampaign confirmó la automatización del resultado."),
         saveMessage: (message) =>
           run(
             (repo) => repo.saveMessage(message),
@@ -148,6 +160,7 @@ export function CrmProvider({ children, realData }: { children: ReactNode; realD
       {notice && (
         <div className="toast" role="status">
           <span>{notice.message}</span>
+          {notice.leadHref && <a className="toast__undo" href={notice.leadHref}>Ver lead</a>}
           {notice.undo && (
             <button
               className="toast__undo"

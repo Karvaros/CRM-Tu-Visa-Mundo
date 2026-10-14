@@ -18,6 +18,27 @@ import { createMockRepository } from "../lib/mock-repository";
 
 const now = new Date("2026-09-14T15:30:00Z");
 const seed = () => createMockData("2026-09-14");
+test("notas se guardan y deshacen sin cambiar el seguimiento, incluso tras serializar el historial", () => {
+  const data = seed();
+  const original = structuredClone(data.leads[0]);
+  const updated = applyCommand(data, { type: "note", leadId: original.id, version: original.version, texto: "Llamar después de las 15." }, now, "note-1");
+  assert.equal(updated.leads[0].notas, "Llamar después de las 15.");
+  assert.equal(updated.leads[0].proximoMensajeId, original.proximoMensajeId);
+  assert.equal(updated.leads[0].proximoContacto, original.proximoContacto);
+  assert.equal(updated.leads[0].secuenciaPausada, original.secuenciaPausada);
+  const roundtrip = JSON.parse(JSON.stringify(updated));
+  const undone = applyCommand(roundtrip, { type: "undo", leadId: original.id, version: updated.leads[0].version, interactionId: "note-1" }, now, "undo-note");
+  assert.equal(undone.leads[0].notas, original.notas ?? "");
+  assert.equal(undone.leads[0].proximoMensajeId, original.proximoMensajeId);
+});
+
+test("el directorio encuentra estudios contactados aunque su próximo contacto sea futuro", () => {
+  const lead = { ...seed().leads[0], estado: "ESTUDIO_GRATUITO" as const, ultimoContacto: now.toISOString(), proximoContacto: "2026-09-24" };
+  assert.equal(matchesLeadFilter(lead, "WHATSAPP_ENVIADO", "2026-09-14"), true);
+  assert.equal(matchesLeadFilter(lead, "", "2026-09-14"), true);
+  assert.equal(matchesAgendaFilter(lead, "", "2026-09-14"), false);
+  assert.equal(matchesLeadFilter({ ...lead, ultimoContacto: undefined }, "WHATSAPP_ENVIADO", "2026-09-14"), false);
+});
 function sent(data = seed(), index = 0) {
   const lead = data.leads[index];
   const message = data.mensajes.find(

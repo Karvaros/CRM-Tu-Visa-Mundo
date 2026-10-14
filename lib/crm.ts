@@ -44,6 +44,7 @@ export function matchesLeadFilter(
   now = new Date(),
 ): boolean {
   if (filter === "PENDIENTES_HOY") return priority(lead, date, now) !== null;
+  if (filter === "WHATSAPP_ENVIADO") return Boolean(lead.ultimoContacto);
   return !filter || lead.estado === filter;
 }
 
@@ -77,11 +78,12 @@ const snapshotFields = [
   "perfilEstudio",
   "primerEstudioId",
   "fechaPrimerEstudio",
+  "notas",
 ] as const satisfies readonly (keyof LeadOperationalSnapshot)[];
 
 export function leadOperationalSnapshot(lead: Lead): LeadOperationalSnapshot {
   return Object.fromEntries(
-    snapshotFields.map((field) => [field, lead[field]]),
+    snapshotFields.map((field) => [field, field === "notas" ? lead.notas ?? "" : lead[field]]),
   ) as LeadOperationalSnapshot;
 }
 
@@ -90,6 +92,8 @@ function restoreOperationalSnapshot(
   snapshot: LeadOperationalSnapshot,
 ) {
   for (const field of snapshotFields) {
+    // Older history snapshots predate editable notes; never erase newer notes.
+    if (field === "notas" && !Object.hasOwn(snapshot, "notas")) continue;
     (lead as unknown as Record<string, unknown>)[field] = snapshot[field];
   }
 }
@@ -285,6 +289,13 @@ export function applyCommand(
     tipo = "SIGUIENTE_PASO";
     detalle = `Siguiente paso definido: ${lead.proximaAccion}`;
     undoLabel = detalle;
+  } else if (command.type === "note") {
+    if (typeof command.texto !== "string" || command.texto.length > 5000)
+      throw new Error("La nota admite hasta 5000 caracteres.");
+    lead.notas = command.texto.trim();
+    tipo = "ESTADO";
+    detalle = `Notas actualizadas: ${lead.notas || "sin notas"}`;
+    undoLabel = "Notas actualizadas";
   } else {
     if (!leadStatuses.includes(command.estado))
       throw new Error("Estado inválido.");
