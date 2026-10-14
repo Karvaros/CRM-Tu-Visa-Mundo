@@ -128,3 +128,7 @@ dd { margin: 4px 0 0; overflow-wrap: anywhere; }
 .study-answers summary:focus-visible, .state-help summary:focus-visible { outline: 3px solid #418adb; outline-offset: 5px; }
 .study-answers dd, .state-help dd { margin-bottom: 16px; }
 .lead-notes { white-space: pre-wrap; overflow-wrap: anywhere; }
+.toast { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.toast > span { flex: 1 1 260px; }
+.toast a.toast__undo { display: inline-flex; align-items: center; color: white; white-space: nowrap; }
+.toast button { margin-left: 0; }
